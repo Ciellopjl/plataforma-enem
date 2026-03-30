@@ -1,0 +1,21 @@
+{
+  "name": "ENEM 2026 Gamificado",
+  "short_name": "ENEM2026",
+  "description": "Plataforma de estudos gamificada para o ENEM 2026 com IA.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#8b5cf6",
+  "icons": [
+    {
+      "src": "/logo-enem.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo-enem.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
