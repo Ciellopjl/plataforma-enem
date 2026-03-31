@@ -17,13 +17,13 @@ export default async function RankingPage() {
 
   // Buscar os top 10 usuários reais do banco de dados (Sênior: Integração de Dados Reais)
   const topUsers = await prisma.user.findMany({
-    orderBy: { totalPoints: "desc" },
+    orderBy: { points: "desc" },
     take: 10,
     select: {
       id: true,
       name: true,
       image: true,
-      totalPoints: true,
+      points: true,
     }
   });
 
@@ -31,7 +31,7 @@ export default async function RankingPage() {
   const rankingItems = topUsers.map((u, i) => ({
     rank: i + 1,
     name: u.name || "Estudante Anônimo",
-    points: u.totalPoints,
+    points: u.points,
     avatar: u.image,
     initials: (u.name || "E").substring(0, 2).toUpperCase(),
     isMe: u.id === currentUserId

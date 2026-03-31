@@ -51,13 +51,12 @@ Retorne APENAS um JSON válido.
 }`;
 
   try {
-    const model = getChatModel(); // Usando Groq Llama 3 70B para mentoria elite
-    const { text: responseText } = await generateText({
-      model,
-      system: systemPrompt,
-      prompt: "Gere meu próximo plano de estudos semanal.",
-      temperature: 0.7,
-    });
+    const { askAI } = await import("@/lib/ai-service");
+    const { text: responseText } = await askAI(
+      "Gere meu próximo plano de estudos semanal.",
+      systemPrompt,
+      "chat"
+    );
 
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     const cleanJson = jsonMatch ? jsonMatch[0] : responseText;

@@ -25,13 +25,13 @@ DIRETRIZES:
   ];
 
   try {
-    const model = getChatModel(); // Usando Groq Llama 3 70B para mentoria didática
-    const { text: responseText } = await generateText({
-      model,
-      system: systemPrompt,
-      messages: messages,
-      temperature: 0.7,
-    });
+    const { askAI } = await import("@/lib/ai-service");
+    const { text: responseText } = await askAI(
+      "", // Prompt vazio pois estamos passando 'messages'
+      systemPrompt,
+      "chat",
+      messages
+    );
 
     return { response: responseText };
   } catch (err) {

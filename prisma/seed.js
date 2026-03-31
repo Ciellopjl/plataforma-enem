@@ -4,6 +4,7 @@ const prisma = new PrismaClient();
 async function main() {
   // Limpar dados existentes para evitar duplicatas e inconsistências no novo schema
   await prisma.progress.deleteMany({});
+  await prisma.dailyChallenge.deleteMany({}); // Adicionado para limpeza total
   await prisma.quizAttempt.deleteMany({});
   await prisma.option.deleteMany({});
   await prisma.question.deleteMany({});
@@ -91,42 +92,91 @@ async function main() {
 
     await prisma.lesson.create({ data: lessonData });
 
-    // 2. Criar Quiz
+    // 2. Criar Quiz (Desafio Master)
     const quiz = await prisma.quiz.create({
       data: {
-        title: `Desafio Master ${s.name}`,
-        description: "Teste seus conhecimentos do módulo básico.",
+        title: `Desafio Master ${subject.name}`,
+        description: `Teste seus conhecimentos sobre ${subject.name} (Módulo 1).`,
         subjectId: subject.id,
       }
     });
 
-    // 3. Adicionar Questões ao Quiz
-    const q1 = await prisma.question.create({
-      data: {
-        text: s.slug === "matematica" 
-          ? "Se um conjunto A tem 3 elementos e o conjunto B tem 4 elementos, quantas funções de A em B existem?"
-          : `Qual o principal objetivo do estudo de ${s.name} no contexto do ENEM?`,
-        quizId: quiz.id,
-      }
-    });
+    // 3. Adicionar 5 Questões por Matéria (Banco Sênior)
+    const subjectQuestions = {
+      matematica: [
+        { text: "Se um conjunto A tem 3 elementos e o conjunto B tem 4 elementos, quantas funções de A em B existem?", options: ["12", "64", "81", "7"], correct: 2 },
+        { text: "Qual a área de um círculo com raio 5 cm? (Use π ≈ 3)", options: ["15", "75", "150", "225"], correct: 1 },
+        { text: "Em um mapa de escala 1:100.000, 5 cm representam qual distância real?", options: ["5 km", "50 km", "500 km", "0,5 km"], correct: 0 },
+        { text: "A probabilidade de sair um número par no lançamento de um dado comum é:", options: ["1/6", "1/3", "1/2", "2/3"], correct: 2 },
+        { text: "A média aritmética entre os números 10, 20 e 60 é:", options: ["30", "45", "90", "15"], correct: 0 }
+      ],
+      biologia: [
+        { text: "Qual organela é responsável pela respiração celular?", options: ["Ribossomo", "Mitocôndria", "Lisossomo", "Complexo de Golgi"], correct: 1 },
+        { text: "O que define um organismo procarionte?", options: ["Ausência de núcleo", "Presença de mitocôndria", "Parede celular de quitina", "DNA linear"], correct: 0 },
+        { text: "Na cadeia alimentar, os fungos e bactérias são classificados como:", options: ["Produtores", "Consumidores Primários", "Consumidores Terciários", "Decompositores"], correct: 3 },
+        { text: "Qual base nitrogenada é exclusiva do RNA?", options: ["Timina", "Uracila", "Citosina", "Guanina"], correct: 1 },
+        { text: "O cruzamento de dois heterozigotos (Aa x Aa) resulta em qual proporção fenotípica?", options: ["1:1", "3:1", "9:3:3:1", "2:1"], correct: 1 }
+      ],
+      fisica: [
+        { text: "Qual a unidade de força no Sistema Internacional?", options: ["Joule", "Watt", "Newton", "Pascal"], correct: 2 },
+        { text: "Um carro percorre 120 km em 2 horas. Qual sua velocidade média?", options: ["60 km/h", "70 km/h", "80 km/h", "100 km/h"], correct: 0 },
+        { text: "A primeira lei de Newton também é conhecida como lei da:", options: ["Ação e Reação", "Gravitação", "Inércia", "Aceleração"], correct: 2 },
+        { text: "Qual a fórmula da Segunda Lei de Newton?", options: ["E=mc²", "F = m.a", "V = d/t", "P = U.i"], correct: 1 },
+        { text: "Em um circuito em série, a corrente elétrica é:", options: ["Diferente em cada resistor", "Igual em todos os pontos", "Sempre zero", "Inversamente proporcional"], correct: 1 }
+      ],
+      quimica: [
+        { text: "O número atômico (Z) representa a quantidade de:", options: ["Nêutrons", "Elétrons", "Prótons", "Massa"], correct: 2 },
+        { text: "Qual o tipo de ligação entre um metal e um não-metal?", options: ["Covalente", "Metálica", "Iônica", "Dipolo-induzido"], correct: 2 },
+        { text: "O pH de uma solução neutra a 25°C é:", options: ["0", "7", "14", "1"], correct: 1 },
+        { text: "Qual o elemento químico mais abundante no universo?", options: ["Oxigênio", "Hélio", "Hidrogênio", "Nitrôgenio"], correct: 2 },
+        { text: "Misturas que apresentam apenas uma fase são chamadas de:", options: ["Heterogêneas", "Homogêneas", "Azeotrópicas", "Colóides"], correct: 1 }
+      ],
+      historia: [
+        { text: "Quem proclamou a independência do Brasil?", options: ["D. Pedro II", "D. Pedro I", "Getúlio Vargas", "Tiradentes"], correct: 1 },
+        { text: "O período conhecido como 'Estado Novo' foi liderado por:", options: ["Juscelino Kubitschek", "Castelo Branco", "Getúlio Vargas", "João Goulart"], correct: 2 },
+        { text: "A Revolução Industrial teve início em qual país?", options: ["França", "Estados Unidos", "Alemanha", "Inglaterra"], correct: 3 },
+        { text: "O Tratado de Tordesilhas dividiu as terras entre:", options: ["Brasil e Portugal", "Portugal e Espanha", "Inglaterra e França", "Espanha e Holanda"], correct: 1 },
+        { text: "Qual evento marcou o início da Idade Moderna?", options: ["Queda de Constantinopla", "Revolução Francesa", "Descoberta do Brasil", "Primeira Guerra Mundial"], correct: 0 }
+      ],
+      geografia: [
+        { text: "Qual o maior país em extensão territorial do mundo?", options: ["Canadá", "China", "Estados Unidos", "Rússia"], correct: 3 },
+        { text: "O processo de crescimento das cidades em relação ao campo é:", options: ["Êxodo rural", "Gentrificação", "Urbanização", "Metropolização"], correct: 2 },
+        { text: "Qual camada da atmosfera contém a camada de ozônio?", options: ["Troposfera", "Estratosfera", "Mesosfera", "Exosfera"], correct: 1 },
+        { text: "A linha imaginária que divide a Terra em Norte e Sul é:", options: ["Meridiano de Greenwich", "Trópico de Câncer", "Equador", "Círculo Polar Ártico"], correct: 2 },
+        { text: "Qual bioma brasileiro é conhecido como 'Savana brasileira'?", options: ["Caatinga", "Cerrado", "Pampas", "Pantanal"], correct: 1 }
+      ]
+    };
 
-    const options = s.slug === "matematica"
-      ? ["12", "64", "81", "7"]
-      : ["Passar na prova", "Decorar fórmulas", "Compreender fenômenos", "Analisar dados"];
+    const questionsMap = subjectQuestions[subject.slug] || [
+      { text: `Questão 1 de ${subject.name}`, options: ["Opção A", "Opção B", "Opção C", "Opção D"], correct: 0 },
+      { text: `Questão 2 de ${subject.name}`, options: ["Opção A", "Opção B", "Opção C", "Opção D"], correct: 1 },
+      { text: `Questão 3 de ${subject.name}`, options: ["Opção A", "Opção B", "Opção C", "Opção D"], correct: 2 },
+      { text: `Questão 4 de ${subject.name}`, options: ["Opção A", "Opção B", "Opção C", "Opção D"], correct: 3 },
+      { text: `Questão 5 de ${subject.name}`, options: ["Opção A", "Opção B", "Opção C", "Opção D"], correct: 0 }
+    ];
 
-    for (let i = 0; i < options.length; i++) {
-      const option = await prisma.option.create({
+    for (const qData of questionsMap) {
+      const question = await prisma.question.create({
         data: {
-          text: options[i],
-          questionId: q1.id,
+          text: qData.text,
+          quizId: quiz.id,
         }
       });
-      // Definir a primeira opção como correta para exemplo
-      if (i === 1) { // 64 ou Decorar
-        await prisma.question.update({
-          where: { id: q1.id },
-          data: { correctOptionId: option.id }
+
+      for (let i = 0; i < qData.options.length; i++) {
+        const option = await prisma.option.create({
+          data: {
+            text: qData.options[i],
+            questionId: question.id,
+          }
         });
+
+        if (i === qData.correct) {
+          await prisma.question.update({
+            where: { id: question.id },
+            data: { correctOptionId: option.id }
+          });
+        }
       }
     }
   }

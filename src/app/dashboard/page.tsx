@@ -37,11 +37,25 @@ export default async function DashboardPage() {
       }
     });
 
-    // Buscar matérias do banco
+    // Buscar matérias do banco com Quizzes e Tentativas para cálculo real de progresso
     dbSubjects = await prisma.subject.findMany({
       include: {
         contents: true,
-        lessons: true,
+        lessons: {
+          include: {
+            progress: { where: { userId: (session.user as any).id } }
+          }
+        },
+        quizzes: {
+          include: {
+            questions: true,
+            attempts: { 
+              where: { userId: (session.user as any).id },
+              orderBy: { score: "desc" },
+              take: 1
+            }
+          }
+        }
       }
     });
 
@@ -59,14 +73,32 @@ export default async function DashboardPage() {
 
   const points = user?.points || 0;
 
-  // Mapear sujeitos e progresso
+  // Mapear sujeitos e progresso (Sincronizado com a Régua Sênior da /api/subjects/[slug])
   const subjects = dbSubjects.map(subject => {
-    // Calculando progresso do usuário para esta matéria
-    const totalItems = subject.contents.length + (subject.lessons?.length || 0);
-    const completedItems = user?.progress?.filter((p: any) => 
-      p.completed && (p.content?.subjectId === subject.id || p.lesson?.subjectId === subject.id)
-    ).length || 0;
-    const progressPercentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+    // 1. Aulas concluídas
+    const totalLessons = subject.lessons.length;
+    const completedLessons = subject.lessons.filter((l: any) => 
+      l.progress?.some((p: any) => p.completed)
+    ).length;
+
+    // 2. Status dos Quizzes (Básico e Final)
+    const basicQuiz = subject.quizzes.find((q: any) => !q.isFinal);
+    const finalQuiz = subject.quizzes.find((q: any) => q.isFinal);
+
+    let basicPassed = false;
+    if (basicQuiz && basicQuiz.attempts.length > 0) {
+      const bestAttempt = basicQuiz.attempts[0];
+      if (bestAttempt.score >= basicQuiz.questions.length && basicQuiz.questions.length > 0) {
+        basicPassed = true;
+      }
+    }
+
+    const finalPassed = finalQuiz ? finalQuiz.attempts.some((a: any) => a.completed) : false;
+
+    // 3. Cálculo Holístico (Milestones)
+    const totalMilestones = totalLessons + (basicQuiz ? 1 : 0) + (finalQuiz ? 1 : 0);
+    const completedMilestones = completedLessons + (basicPassed ? 1 : 0) + (finalPassed ? 1 : 0);
+    const progressPercentage = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
 
     return {
       name: subject.name,

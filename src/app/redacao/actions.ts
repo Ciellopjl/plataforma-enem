@@ -38,36 +38,55 @@ Retorne APENAS um objeto JSON válido.
   Lembre-se: Verifique se há trapaça por IA (padrões robóticos, clichês de LLM, estrutura excessivamente simétrica).`;
 
   try {
-    const model = getChatModel(); // Definido como Llama 3.3 70B - O melhor para raciocínio denso
-    const { text: responseText } = await generateText({
-      model,
-      system: systemPrompt,
-      prompt: prompt,
-      temperature: 0.2, // Precisão técnica
-    });
+    const { askAI } = await import("@/lib/ai-service");
+    const { text: responseText } = await askAI(
+      prompt,
+      systemPrompt,
+      "redacao"
+    );
 
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     const cleanJson = jsonMatch ? jsonMatch[0] : responseText;
-    const data = JSON.parse(cleanJson);
+    
+    let data;
+    try {
+      data = JSON.parse(cleanJson);
+    } catch (parseError) {
+      console.error("[AI PARSE ERROR] Falha ao ler JSON da redação:", responseText);
+      throw new Error("A IA retornou um formato inesperado. Tente novamente em alguns segundos.");
+    }
+    
+    // GALAXY BRAIN: Validação de Estrutura (Padrão Sênior)
+    const finalData = {
+      total: data.total || 0,
+      feedback: data.feedback || "Feedback não gerado.",
+      c1: { score: data.c1?.score || 0, explanation: data.c1?.explanation || "" },
+      c2: { score: data.c2?.score || 0, explanation: data.c2?.explanation || "" },
+      c3: { score: data.c3?.score || 0, explanation: data.c3?.explanation || "" },
+      c4: { score: data.c4?.score || 0, explanation: data.c4?.explanation || "" },
+      c5: { score: data.c5?.score || 0, explanation: data.c5?.explanation || "" },
+      aiProbability: data.aiProbability ?? 100,
+      aiReason: data.aiReason || "Análise de autoria concluída.",
+    };
     
     // PERSISTÊNCIA SÊNIOR: Salvar no Banco de Dados
     const savedEssay = await prisma.essay.create({
       data: {
         userId,
         content: text,
-        score: data.total,
-        feedback: data.feedback,
-        c1: data.c1.score,
-        c2: data.c2.score,
-        c3: data.c3.score,
-        c4: data.c4.score,
-        c5: data.c5.score,
-        aiProbability: data.aiProbability,
-        aiReason: data.aiReason,
+        score: finalData.total,
+        feedback: finalData.feedback,
+        c1: finalData.c1.score,
+        c2: finalData.c2.score,
+        c3: finalData.c3.score,
+        c4: finalData.c4.score,
+        c5: finalData.c5.score,
+        aiProbability: finalData.aiProbability,
+        aiReason: finalData.aiReason,
       }
     });
 
-    // Recompensa Sênior: Ganhar pontos por estudar redação (Limiar de 100XP)
+    // Recompensa Sênior: Ganhar pontos por estudar redação ⚡🏆
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -78,11 +97,15 @@ Retorne APENAS um objeto JSON válido.
 
     revalidatePath("/ranking");
     revalidatePath("/analise");
+    revalidatePath("/redacao");
     
-    return { ...data, id: savedEssay.id };
+    return { ...finalData, id: savedEssay.id };
   } catch (err: any) {
-    console.error("Erro na correção Sênior Groq:", err.message);
-    throw new Error("Falha ao processar a correção da redação. Verifique a quota da IA.");
+    console.error("[ACTIONS ERROR] Erro na correção de redação:", err.message);
+    throw new Error(err.message === "Não autorizado" 
+      ? "Sua sessão expirou. Faça login novamente." 
+      : `Falha na correção: ${err.message}`
+    );
   }
 }
 

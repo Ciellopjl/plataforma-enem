@@ -136,13 +136,12 @@ Alternativas: ${options.join(" | ")}
 Resposta correta: ${correctOptionText}`;
 
   try {
-    const model = getQuizModel(); // Usando Groq Llama 3 8B para velocidade
-    const { text: responseText } = await generateText({
-      model,
-      system: systemPrompt,
-      prompt: prompt,
-      temperature: 0.3,
-    });
+    const { askAI } = await import("@/lib/ai-service");
+    const { text: responseText } = await askAI(
+      prompt,
+      systemPrompt,
+      "quiz"
+    );
 
     return { explanation: responseText };
   } catch (err: any) {

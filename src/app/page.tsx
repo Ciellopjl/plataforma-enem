@@ -35,11 +35,6 @@ export default function LandingPage() {
               <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
           </Link>
-          <Link href="/dashboard" className="w-full sm:w-auto">
-            <Button variant="secondary" size="lg" className="w-full py-6 px-10 text-xl font-bold">
-              Ver Demo
-            </Button>
-          </Link>
         </div>
 
         {/* Ambient background glow */}

@@ -43,19 +43,22 @@ export function CreatorControl() {
   return (
     <section className="animate-in fade-in slide-in-from-top-4 duration-1000">
       <div className="flex items-center gap-3 mb-4">
-        <Sparkles className="text-amber-500 animate-pulse" size={16} />
-        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-500/80">Creator God Mode</span>
-        <div className="h-px bg-amber-500/10 flex-1" />
+        <Sparkles className="text-amber-400 animate-pulse" size={16} />
+        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-amber-500/90 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]">Creator God Mode</span>
+        <div className="h-px bg-gradient-to-r from-amber-500/20 to-transparent flex-1" />
       </div>
 
-      <div className="glass p-6 rounded-[2.5rem] border-amber-500/20 bg-amber-500/5 flex flex-col md:flex-row items-center gap-6 justify-between">
-        <div className="flex items-center gap-5">
-           <div className="bg-amber-500/20 p-4 rounded-2xl">
-              <ShieldAlert className="text-amber-500 w-8 h-8" />
+      <div className="glass p-8 rounded-[3rem] border-amber-500/30 bg-amber-500/5 shadow-[0_0_30px_rgba(245,158,11,0.05)] flex flex-col lg:flex-row items-center gap-8 justify-between relative overflow-hidden group">
+        {/* Efeito de brilho de fundo */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[80px] -z-10 group-hover:bg-amber-500/10 transition-colors duration-1000" />
+        
+        <div className="flex items-center gap-6">
+           <div className="bg-amber-500/20 p-5 rounded-3xl ring-1 ring-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+              <ShieldAlert className="text-amber-400 w-10 h-10" />
            </div>
            <div>
-              <h3 className="text-lg font-black text-white">Controle Mestre</h3>
-              <p className="text-xs text-amber-500/60 font-medium">Somente você, Ciello, tem acesso a estes poderes.</p>
+              <h3 className="text-xl font-black text-white tracking-tight">Controle Mestre</h3>
+              <p className="text-xs text-amber-500/70 font-semibold tracking-wide">Privilégios administrativos ativos para o Criador.</p>
            </div>
         </div>
 
@@ -83,9 +86,9 @@ export function CreatorControl() {
            <button
              onClick={handle100Percent}
              disabled={loading}
-             className="px-6 py-3 bg-zinc-900 border border-white/5 text-zinc-400 font-bold text-[10px] uppercase tracking-widest rounded-xl hover:bg-white/5 transition-all flex items-center gap-2"
+             className="px-8 py-4 bg-zinc-950/80 border border-white/5 text-zinc-300 font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl hover:bg-white/10 hover:border-white/20 transition-all flex items-center gap-2 group/btn"
            >
-             {loading ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle2 size={14} />}
+             {loading ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle2 className="group-hover/btn:text-emerald-400 transition-colors" size={14} />}
              Restaurar 100%
            </button>
 
@@ -93,7 +96,7 @@ export function CreatorControl() {
            <button
              onClick={handleRepair}
              disabled={loading}
-             className="px-6 py-3 bg-white text-black font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-zinc-200 transition-all flex items-center gap-2"
+             className="px-8 py-4 bg-white text-black font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl hover:bg-zinc-200 shadow-[0_0_20px_rgba(255,255,255,0.2)] hover:shadow-[0_0_30px_rgba(255,255,255,0.4)] transition-all flex items-center gap-2"
            >
              {loading ? <Loader2 className="animate-spin" size={14} /> : <Trophy size={14} />}
              Ativar Prova Final

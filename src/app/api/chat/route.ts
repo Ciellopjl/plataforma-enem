@@ -63,7 +63,7 @@ Mantenha a persona do Mestre ENEM, mas com um tom de parceria exclusiva e reconh
       const randomAnswer = fallbackAnswers[Math.floor(Math.random() * fallbackAnswers.length)];
       
       return NextResponse.json({ 
-        text: `🤖 (Modo Resiliência) ${randomAnswer}\n\n[ADMIN: Verifique a GROQ_API_KEY no .env]` 
+        text: `🤖 ${randomAnswer}` 
       });
     }
   } catch (error: any) {

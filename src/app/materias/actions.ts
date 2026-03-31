@@ -31,7 +31,10 @@ export async function toggleProgress(id: string, type: "content" | "lesson", com
         }),
         prisma.user.update({
           where: { id: userId },
-          data: { points: { increment: POINTS } }
+          data: { 
+            points: { increment: POINTS },
+            totalPoints: { increment: POINTS }
+          }
         })
       ]);
     } else {
@@ -44,7 +47,10 @@ export async function toggleProgress(id: string, type: "content" | "lesson", com
         }),
         prisma.user.update({
           where: { id: userId },
-          data: { points: { decrement: POINTS } }
+          data: { 
+            points: { decrement: POINTS },
+            totalPoints: { decrement: POINTS }
+          }
         })
       ]);
     }
@@ -93,7 +99,10 @@ export async function submitQuizResult(quizId: string, score: number) {
       }),
       prisma.user.update({
         where: { id: userId },
-        data: { points: { increment: score * 5 } }
+        data: { 
+          points: { increment: score * 5 },
+          totalPoints: { increment: score * 5 }
+        }
       })
     ]);
 
@@ -174,7 +183,10 @@ export async function submitFinalExam(quizId: string, mcqScore: number, essayTex
       }),
       prisma.user.update({
         where: { id: userId },
-        data: { points: { increment: finalTotalPoints } }
+        data: { 
+          points: { increment: finalTotalPoints },
+          totalPoints: { increment: finalTotalPoints }
+        }
       })
     ]);
 

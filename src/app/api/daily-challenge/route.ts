@@ -41,15 +41,26 @@ export async function POST(req: Request) {
     const session = await auth();
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const userId = (session.user as any).id;
-
     const { difficulty = "medio" } = await req.json().catch(() => ({ difficulty: "medio" }));
+
+    // [SENIOR FIX] Garante que o usuário exista no banco (prevenção contra reset de DB)
+    const userDb = await prisma.user.upsert({
+      where: { email: session.user.email as string },
+      update: {}, 
+      create: {
+        id: userId, 
+        email: session.user.email as string,
+        name: session.user.name,
+        image: session.user.image,
+      }
+    });
 
     if (getDaysUntilEnem() <= 0) return NextResponse.json({ isEnemOver: true });
 
     // Impede duplicata no mesmo dia
     const today = new Date(); today.setHours(0, 0, 0, 0);
     const existing = await prisma.dailyChallenge.findFirst({
-      where: { userId, date: { gte: today } }
+      where: { userId: userDb.id, date: { gte: today } }
     });
     if (existing) return NextResponse.json(existing);
 
