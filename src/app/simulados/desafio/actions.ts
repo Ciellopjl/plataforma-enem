@@ -5,6 +5,7 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getQuizModel } from "@/lib/ai-service";
 import { generateText } from "ai";
+import { logActivity } from "@/lib/logger";
 
 export async function submitDailyChallenge(
   challengeId: string, 
@@ -79,6 +80,14 @@ export async function submitDailyChallenge(
       lastChallengeDate: new Date(),
     },
   });
+
+  // Registrar log de atividade do desafio concluído
+  try {
+    await logActivity(
+      `🎯 Concluiu Desafio Diário`,
+      `${challenge.quiz.title} | ${correctCount}/${challenge.quiz.questions.length} corretas | +${score} pts | Sequência: ${newStreak}d`
+    );
+  } catch { /* não bloquear o fluxo */ }
 
   let newBadges: any[] = [];
   try {

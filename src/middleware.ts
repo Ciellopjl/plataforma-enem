@@ -10,6 +10,8 @@ export default auth((req) => {
   const isPublicRoute = [
     "/",
     "/login", 
+    "/login/esqueceu-senha",
+    "/login/resetar-senha",
     "/manifest.json", 
     "/logo-enem.png", 
     "/favicon.ico",
@@ -38,6 +40,14 @@ export default auth((req) => {
 
     const encodedCallbackUrl = encodeURIComponent(callbackUrl);
     return NextResponse.redirect(new URL(`/login?callbackUrl=${encodedCallbackUrl}`, nextUrl));
+  }
+
+  // 4.1 Proteção da Rota Admin (Sênior)
+  if (nextUrl.pathname.startsWith("/admin")) {
+    const role = (req.auth as any)?.user?.role;
+    if (role !== "ADMIN") {
+      return NextResponse.redirect(new URL("/dashboard", nextUrl));
+    }
   }
 
   // 5. Injeção de Cabeçalhos de Segurança (Segurança Máxima)

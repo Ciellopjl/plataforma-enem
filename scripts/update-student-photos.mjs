@@ -19,7 +19,6 @@ async function updatePhotos() {
   console.log("🔍 Buscando alunos sem fotos...");
   const students = await prisma.user.findMany({
     where: { 
-      role: "STUDENT",
       OR: [
         { image: null },
         { image: "" }

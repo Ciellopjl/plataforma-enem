@@ -1,6 +1,6 @@
 import { ProgressBar, Button } from "@/components/ui/base-ui";
 import { SubjectCard } from "@/components/ui/subject-card";
-import { Trophy, Flame, Target, BookOpen, Clock, GraduationCap, Star, Users } from "lucide-react";
+import { Trophy, Flame, Target, BookOpen, Clock, GraduationCap, Star, Users, Shield, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { cn, getDaysUntilEnem } from "@/lib/utils";
 import { auth } from "@/lib/auth";
@@ -10,6 +10,7 @@ import prisma from "@/lib/prisma";
 import { DailyChallengeCard } from "@/components/ui/daily-challenge";
 import { DevResetButton } from "@/components/ui/dev-reset-button";
 import { CreatorControl } from "@/components/ui/creator-control";
+import { LiveRefresh } from "@/components/ui/live-refresh";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -148,15 +149,27 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <LiveRefresh intervalMs={10000} />
       {isDevUser && <CreatorControl />}
       {isDevUser && <DevResetButton />}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
-        <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Painel de Estudos</h1>
-          <p className="text-zinc-400">
-            Bem-vindo de volta, {session.user.name?.split(" ")[0]}! 
-            {getDaysUntilEnem() > 0 ? ` Faltam ${getDaysUntilEnem()} dias para o ENEM.` : " Chegou o ENEM! Mantenha a calma e arrebente."}
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl border border-white/5 overflow-hidden relative shrink-0">
+            {session.user.image ? (
+              <img src={session.user.image} alt={session.user.name || "Perfil"} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full bg-primary-500/20 flex items-center justify-center text-primary-500 text-2xl font-black">
+                {session.user.name?.[0]?.toUpperCase() || "?"}
+              </div>
+            )}
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Painel de Estudos</h1>
+            <p className="text-zinc-400">
+              Bem-vindo de volta, {session.user.name?.split(" ")[0]}! 
+              {getDaysUntilEnem() > 0 ? ` Faltam ${getDaysUntilEnem()} dias para o ENEM.` : " Chegou o ENEM! Mantenha a calma e arrebente."}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="glass px-4 py-2 rounded-2xl flex items-center gap-2 border-primary-500/20 shadow-lg shadow-primary-500/10 transition-all hover:scale-105">
@@ -219,27 +232,30 @@ export default async function DashboardPage() {
         ))}
       </section>
 
-      {/* Painel Administrativo Exclusivo */}
+      {/* Painel Administrativo Exclusivo Sênior */}
       {((session.user as any).role === "ADMIN" || isDevUser) && (
         <section className="animate-in fade-in slide-in-from-left-4 duration-1000">
            <div className="flex items-center gap-3 mb-4">
-             <div className="h-px bg-white/10 flex-1" />
-             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Painel Administrativo</span>
-             <div className="h-px bg-white/10 flex-1" />
+             <div className="h-px bg-primary-500/10 flex-1" />
+             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary-500/50">Centro de Comando Admin</span>
+             <div className="h-px bg-primary-500/10 flex-1" />
            </div>
-           <Link href="/admin/students" className="block w-full text-left">
-              <div className="w-full glass p-8 rounded-[2rem] border-primary-500/20 hover:border-primary-500/40 bg-primary-500/5 hover:bg-primary-500/10 transition-all flex flex-col md:flex-row items-center justify-between gap-6 group cursor-pointer">
-                <div className="flex items-center gap-6">
-                  <div className="bg-primary-500/20 p-4 rounded-2xl group-hover:scale-110 transition-transform">
-                    <Users className="text-primary-400 w-8 h-8" />
+           <Link href="/admin" className="block w-full text-left">
+              <div className="w-full glass p-8 rounded-[2rem] border-primary-500/20 hover:border-primary-500/40 bg-zinc-950/40 hover:bg-primary-500/5 transition-all flex flex-col md:flex-row items-center justify-between gap-6 group cursor-pointer overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-8 text-6xl font-black text-primary-500/5 opacity-0 group-hover:opacity-100 transition-all">
+                  ADMIN
+                </div>
+                <div className="flex items-center gap-6 relative z-10">
+                  <div className="bg-primary-500/10 p-4 rounded-2xl group-hover:scale-110 group-hover:bg-primary-500/20 transition-all">
+                    <Shield className="text-primary-400 w-8 h-8" />
                   </div>
                   <div className="text-center md:text-left">
-                    <h3 className="text-xl font-bold text-white">Banco de Dados de Alunos</h3>
-                    <p className="text-sm text-zinc-400">Visualize e gerencie todos os Gmails e o progresso dos seus estudantes.</p>
+                    <h3 className="text-xl font-bold text-white tracking-tight">Gestão da Plataforma</h3>
+                    <p className="text-sm text-zinc-400">Controle de alunos, bloqueios e permissões de acesso.</p>
                   </div>
                 </div>
-                <div className="px-6 py-3 bg-primary-500 text-black font-black rounded-xl group-hover:bg-primary-400 transition-colors flex items-center gap-2">
-                  Acessar Banco <GraduationCap size={18} />
+                <div className="px-8 py-4 bg-primary-500 text-black font-black rounded-2xl group-hover:bg-primary-400 transition-colors flex items-center gap-2 shadow-lg shadow-primary-500/20 relative z-10">
+                  Gerenciar Alunos <ShieldCheck size={18} />
                 </div>
               </div>
            </Link>

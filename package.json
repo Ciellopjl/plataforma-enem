@@ -24,6 +24,8 @@
     "openai": "^6.33.0",
     "react": "^18",
     "react-dom": "^18",
+    "nodemailer": "^6.9.13",
+    "resend": "^6.10.0",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.23.8"
@@ -31,6 +33,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
+    "@types/nodemailer": "^7.0.11",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.27",

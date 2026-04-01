@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { 
   PenTool, Send, Loader2, Sparkles, AlertTriangle, 
-  CheckCircle2, Info, ChevronRight, BarChart, Shield 
+  CheckCircle2, Info, ChevronRight, BarChart, Shield,
+  BookOpen, FileText, MessageSquare, Layout
 } from "lucide-react";
 import { calculateEssayScore, getEssayHistory } from "./actions";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,11 @@ type CorrectionResult = {
   c5: { score: number; explanation: string };
   total: number;
   feedback: string;
+  structure?: {
+    intro: string;
+    dev: string;
+    conc: string;
+  };
   aiProbability: number;
   aiReason: string;
   content?: string;
@@ -28,10 +34,13 @@ export default function RedacaoPage() {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<CorrectionResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<CorrectionResult[]>([]);
   const [view, setView] = useState<"editor" | "historico">("editor");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     fetchHistory();
   }, []);
 
@@ -61,12 +70,14 @@ export default function RedacaoPage() {
     if (wordCount < 100) return;
     setLoading(true);
     setResult(null);
+    setError(null);
     try {
       const data = await calculateEssayScore(text);
       setResult(data);
       fetchHistory(); // Atualizar histórico após correção
-    } catch (err) {
-      alert("Houve um erro ao corrigir sua redação. Tente novamente.");
+    } catch (err: any) {
+      console.error("Erro na correção:", err);
+      setError(err.message || "Ocorreu um erro inesperado. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -198,7 +209,23 @@ export default function RedacaoPage() {
 
         {/* Lado do Resultado */}
         <div className="space-y-6">
-          {!result && !loading && (
+          {error && (
+             <div className="glass p-10 rounded-[2rem] border-red-500/20 bg-red-500/5 flex flex-col items-center justify-center text-center py-20 border-2 animate-in zoom-in-95">
+                <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-6">
+                   <AlertTriangle size={24} className="text-red-400" />
+                </div>
+                <h3 className="text-lg font-black text-red-200 mb-2">Falha na Análise</h3>
+                <p className="text-zinc-400 max-w-xs text-xs mb-6">{error}</p>
+                <button 
+                  onClick={handleCorrect}
+                  className="px-6 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-red-500/30 transition-all"
+                >
+                  Tentar Novamente
+                </button>
+             </div>
+          )}
+
+          {!result && !loading && !error && (
              <div className="glass p-10 rounded-[2rem] border-dashed border-white/10 flex flex-col items-center justify-center text-center py-40 border-2">
                 <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mb-6">
                    <Info size={30} className="text-zinc-700" />
@@ -265,10 +292,46 @@ export default function RedacaoPage() {
                 {result.aiProbability > 70 && (
                   <div className="mt-4 p-3 bg-red-500/20 border border-red-500/40 rounded-xl flex items-center gap-3">
                     <AlertTriangle size={14} className="text-red-400" />
-                    <span className="text-[10px] font-bold text-red-200 uppercase tracking-tighter">ALTA CHANCE DE TRAPAÇA DETECTADA.</span>
+                    <span className="text-[10px] font-bold text-red-200 uppercase tracking-tighter">PADRÃO DE TEXTO ALTAMENTE ESTRUTURADO (ESTILO ACADÊMICO).</span>
                   </div>
                 )}
               </div>
+
+              {/* Análise de Estrutura (Sênior) */}
+              {result.structure && (
+                <div className="glass p-6 rounded-3xl border border-white/5 bg-white/5 space-y-4">
+                   <div className="flex items-center gap-3 mb-2">
+                     <Layout size={18} className="text-primary-400" />
+                     <h3 className="text-xs font-black uppercase tracking-widest text-white">Análise de Estrutura</h3>
+                   </div>
+                   
+                   <div className="space-y-3">
+                      <div className="p-4 rounded-2xl bg-zinc-950/30 border border-white/5">
+                        <div className="flex items-center gap-2 mb-1">
+                          <BookOpen size={14} className="text-blue-400" />
+                          <span className="text-[10px] font-black uppercase text-blue-400">Introdução & Tese</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 leading-relaxed italic">"{result.structure.intro}"</p>
+                      </div>
+
+                      <div className="p-4 rounded-2xl bg-zinc-950/30 border border-white/5">
+                        <div className="flex items-center gap-2 mb-1">
+                          <FileText size={14} className="text-purple-400" />
+                          <span className="text-[10px] font-black uppercase text-purple-400">Desenvolvimento & Argumentos</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 leading-relaxed italic">"{result.structure.dev}"</p>
+                      </div>
+
+                      <div className="p-4 rounded-2xl bg-zinc-950/30 border border-white/5">
+                        <div className="flex items-center gap-2 mb-1">
+                          <MessageSquare size={14} className="text-emerald-400" />
+                          <span className="text-[10px] font-black uppercase text-emerald-400">Conclusão (Proposta Inep)</span>
+                        </div>
+                        <p className="text-[11px] text-zinc-400 leading-relaxed italic">"{result.structure.conc}"</p>
+                      </div>
+                   </div>
+                </div>
+              )}
 
               {/* Grid de Competências */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-4">

@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { askAI } from "@/lib/ai-service";
+import { logActivity } from "@/lib/logger";
 
 /**
  * Alterna o estado de conclusão de um conteúdo (Aula ou Material) para o usuário logado.
@@ -37,6 +38,26 @@ export async function toggleProgress(id: string, type: "content" | "lesson", com
           }
         })
       ]);
+
+      // MONITORAMENTO SÊNIOR: Log de Tarefa Acadêmica
+      try {
+        let taskName = "";
+        let subjectName = "";
+        if (type === "lesson") {
+          const l = await prisma.lesson.findUnique({ where: { id }, include: { subject: true } });
+          if (l) { taskName = l.title; subjectName = l.subject.name; }
+        } else {
+          const c = await prisma.content.findUnique({ where: { id }, include: { subject: true } });
+          if (c) { taskName = c.title; subjectName = c.subject.name; }
+        }
+        if (taskName) {
+           await logActivity(
+             `📚 Concluiu ${type === "lesson" ? "Aula" : "Material"}`, 
+             `${subjectName} | ${taskName} (+${POINTS} Pts)`
+           );
+        }
+      } catch (err) { /* Erro silencioso se falhar o log */ }
+
     } else {
       await prisma.$transaction([
         prisma.progress.update({
@@ -105,6 +126,9 @@ export async function submitQuizResult(quizId: string, score: number) {
         }
       })
     ]);
+
+    // MONITORAMENTO SÊNIOR: Log de Quiz com detalhes
+    await logActivity(`📚 Concluiu Quiz`, `${score} questão(ões) corretas | +${score * 5} pts`);
 
     revalidatePath("/dashboard");
     revalidatePath("/ranking");
@@ -189,6 +213,9 @@ export async function submitFinalExam(quizId: string, mcqScore: number, essayTex
         }
       })
     ]);
+
+    // MONITORAMENTO SÊNIOR: Log de Exame Final 🕵️‍♂️📈🚀
+    await logActivity("Concluiu Exame Final", `Pontuação Total: ${finalTotalPoints}`);
 
     revalidatePath("/dashboard");
     revalidatePath("/ranking");

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import Image from "next/image";
 import Link from "next/link";
+import { LiveRefresh } from "@/components/ui/live-refresh";
 
 export default async function RankingPage() {
   const session = await auth();
@@ -45,6 +46,7 @@ export default async function RankingPage() {
 
   return (
     <div className="space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+      <LiveRefresh intervalMs={5000} />
       <header className="text-center space-y-4 max-w-2xl mx-auto">
         <div className="flex items-center justify-center gap-2 text-primary-400 text-xs font-black uppercase tracking-[0.3em] mb-2">
             <Trophy size={14} /> Ciclo Mensal Ativo

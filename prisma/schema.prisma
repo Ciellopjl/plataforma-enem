@@ -21,6 +21,9 @@ model User {
   lastChallengeDate DateTime?
   streak            Int              @default(0)
   role              UserRole         @default(STUDENT)
+  isBlocked         Boolean          @default(false)
+  lastSeen          DateTime         @default(now())
+  activities        ActivityLog[]
   accounts          Account[]
   dailyChallenges   DailyChallenge[]
   essays            Essay[]
@@ -29,6 +32,15 @@ model User {
   quizAttempts      QuizAttempt[]
   sessions          Session[]
   badges            UserBadge[]
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  details   String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model DailyChallenge {
@@ -73,7 +85,7 @@ model Session {
 
 model VerificationToken {
   identifier String
-  token      String   @unique
+  token      String
   expires    DateTime
 
   @@unique([identifier, token])
@@ -108,9 +120,9 @@ model Quiz {
   description     String?
   subjectId       String
   isFinal         Boolean          @default(false)
-  userId          String?          
-  hasEssay        Boolean          @default(false)
   essayPrompt     String?
+  hasEssay        Boolean          @default(false)
+  userId          String?
   dailyChallenges DailyChallenge[]
   questions       Question[]
   subject         Subject          @relation(fields: [subjectId], references: [id])

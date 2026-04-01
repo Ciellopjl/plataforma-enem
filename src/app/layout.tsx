@@ -26,6 +26,7 @@ export const viewport = {
 
 import { Providers } from "@/components/Providers";
 import { AiTutor } from "@/components/ui/ai-tutor";
+import { Heartbeat } from "@/components/auth/heartbeat";
 
 export default function RootLayout({
   children,
@@ -44,6 +45,7 @@ export default function RootLayout({
             </div>
           </main>
           <AiTutor />
+          <Heartbeat />
         </Providers>
         
         {/* Background glow global sênior */}

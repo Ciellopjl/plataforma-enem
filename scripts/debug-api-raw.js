@@ -1,42 +1,45 @@
-const fs = require('fs');
-const path = require('path');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
-// Manuel .env loading because I'm a senior and don't rely on global state when debugging
-const envPath = path.join(process.cwd(), '.env');
-const envContent = fs.readFileSync(envPath, 'utf8');
-const apiKey = envContent.match(/GEMINI_API_KEY="?([^"\s]+)"?/)[1];
-
-async function testRawAPI() {
-    console.log(`🤖 Senior Debug: Testando Key ${apiKey.substring(0, 5)}... via Raw FETCH`);
+async function debugDatabase() {
+  console.log("🔍 [AUDITORIA SÊNIOR] Conectando ao Banco...");
+  try {
+    const emailToTest = "cellodosom327@gmail.com";
     
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    // 1. Verificar Usuário
+    const user = await prisma.user.findUnique({
+      where: { email: emailToTest.toLowerCase().trim() }
+    });
     
-    const body = {
-        contents: [{
-            parts: [{ text: "Gere 1 questão simples de matemática do ENEM em JSON: { \"text\": \"...\", \"options\": [...], \"correctOptionIndex\": 0 }" }]
-        }],
-        generationConfig: {
-            responseMimeType: "application/json"
-        }
-    };
-
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
-        });
-
-        const data = await response.json();
-        
-        if (!response.ok) {
-            console.error(`❌ HTTP ERROR ${response.status}:`, JSON.stringify(data, null, 2));
-        } else {
-            console.log("✅ API SUCCESS! Response:", JSON.stringify(data.candidates[0].content.parts[0].text, null, 2));
-        }
-    } catch (err) {
-        console.error("❌ FETCH ERROR:", err.message);
+    console.log("👤 Usuário Encontrado:", user ? "SIM" : "NÃO");
+    if (!user) {
+      console.log("⚠️ Verificando se existe e-mail com letras maiúsculas...");
+      const allUsers = await prisma.user.findMany({ select: { email: true } });
+      console.log("E-mails cadastrados:", allUsers.map(u => u.email));
     }
+
+    // 2. Testar Inserção de Token (O que a Action faz)
+    console.log("📝 Testando gravação de Token de teste...");
+    const testToken = await prisma.verificationToken.create({
+       data: {
+         identifier: emailToTest,
+         token: "999999",
+         expires: new Date(Date.now() + 3600000)
+       }
+    });
+    console.log("✅ Gravação de Token: OK!");
+
+    // 3. Limpar teste
+    await prisma.verificationToken.delete({
+       where: { identifier_token: { identifier: emailToTest, token: "999999" } }
+    });
+    console.log("✅ Limpeza de Teste: OK!");
+
+  } catch (err) {
+    console.error("❌ ERRO FATAL NO DB:", err);
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
-testRawAPI();
+debugDatabase();

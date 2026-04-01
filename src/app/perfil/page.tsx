@@ -4,6 +4,7 @@ import Image from "next/image";
 import { auth, signOut } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
+import { ProfileImageUploader } from "./_components/ProfileImageUploader";
 
 export default async function PerfilPage() {
   const session = await auth();
@@ -41,21 +42,8 @@ export default async function PerfilPage() {
          <div className="absolute top-0 right-0 w-64 h-64 bg-primary-600/10 blur-[100px] rounded-full" />
          
          <div className="flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left relative z-10">
-            {/* Imagem do Usuário vinda do Google */}
-            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/5 bg-zinc-900 shadow-xl relative shrink-0">
-               {session.user.image ? (
-                  <Image 
-                    src={session.user.image} 
-                    alt="Foto de perfil" 
-                    fill 
-                    className="object-cover" 
-                  />
-               ) : (
-                 <div className="w-full h-full flex items-center justify-center bg-primary-500/20 text-primary-500">
-                   <User size={48} />
-                 </div>
-               )}
-            </div>
+            {/* Novo Motor Reativo: Uploader de Rosto */}
+            <ProfileImageUploader currentImage={session.user.image} />
 
             <div className="space-y-4 flex-1">
                <div>
