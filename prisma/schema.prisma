@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -100,6 +101,8 @@ model Subject {
   contents Content[]
   lessons  Lesson[]
   quizzes  Quiz[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
 
 model Lesson {
@@ -127,13 +130,14 @@ model Quiz {
   questions       Question[]
   subject         Subject          @relation(fields: [subjectId], references: [id])
   attempts        QuizAttempt[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 model Question {
   id              String   @id @default(cuid())
   text            String
   quizId          String
-  correctOptionId String?
   options         Option[]
   quiz            Quiz     @relation(fields: [quizId], references: [id])
 }
@@ -141,6 +145,7 @@ model Question {
 model Option {
   id         String   @id @default(cuid())
   text       String
+  isCorrect  Boolean  @default(false)
   questionId String
   question   Question @relation(fields: [questionId], references: [id])
 }
@@ -235,8 +240,19 @@ model Essay {
   c5            Int
   aiProbability Int
   aiReason      String
+  teacherFeedback String?
   createdAt     DateTime @default(now())
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  type      String   @default("info") // info, warning, success, alert
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
 }
 
 enum UserRole {

@@ -1,5 +1,5 @@
 import { Trophy, Star, Medal } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatName } from "@/lib/utils";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
@@ -23,6 +23,7 @@ export default async function RankingPage() {
     select: {
       id: true,
       name: true,
+      email: true,
       image: true,
       points: true,
     }
@@ -31,10 +32,10 @@ export default async function RankingPage() {
   // Mapear para o formato do pódio e lista
   const rankingItems = topUsers.map((u, i) => ({
     rank: i + 1,
-    name: u.name || "Estudante Anônimo",
+    name: formatName(u.name, u.email),
     points: u.points,
     avatar: u.image,
-    initials: (u.name || "E").substring(0, 2).toUpperCase(),
+    initials: formatName(u.name, u.email).substring(0, 2).toUpperCase(),
     isMe: u.id === currentUserId
   }));
 

@@ -16,6 +16,7 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
   const [activeQuizIsFinal, setActiveQuizIsFinal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isGeneratingFinal, setIsGeneratingFinal] = useState(false);
+  const [isGeneratingBasic, setIsGeneratingBasic] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -186,19 +187,59 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
           {/* 2. Desafio Básico */}
           {basicQuiz && (
             <div
-              onClick={() => {
-                if (!basicUnlocked) return;
-                setActiveItem(basicQuiz);
-                setActiveQuizIsFinal(false);
-                setView("quiz");
+              onClick={async () => {
+                if (!basicUnlocked || isGeneratingBasic) return;
+                
+                // Se o quiz já tem questões, abre direto
+                if (basicQuiz.questions && basicQuiz.questions.length > 0) {
+                  setActiveItem(basicQuiz);
+                  setActiveQuizIsFinal(false);
+                  setView("quiz");
+                  return;
+                }
+
+                // Se não tem questões, gera agora via IA
+                setIsGeneratingBasic(true);
+                try {
+                  const res = await fetch("/api/generate-basic-quiz", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ quizId: basicQuiz.id })
+                  });
+                  const data = await res.json();
+                  
+                  if (data.quiz) {
+                    setActiveItem(data.quiz);
+                    setActiveQuizIsFinal(false);
+                    setView("quiz");
+                    
+                    // Atualiza o estado local para não gerar de novo
+                    setSubject((prev: any) => ({
+                      ...prev,
+                      basicQuiz: data.quiz
+                    }));
+                  } else {
+                    alert("Falha ao gerar questões do desafio: " + (data.error || "Tente novamente."));
+                  }
+                } catch (e) {
+                   console.error(e);
+                   alert("Erro de conexão ao gerar desafio.");
+                } finally {
+                   setIsGeneratingBasic(false);
+                }
               }}
               className={cn(
-                "glass p-6 rounded-3xl flex items-center gap-6 group transition-all border-white/5",
+                "glass p-6 rounded-3xl flex items-center gap-6 group transition-all border-white/5 relative overflow-hidden",
                 basicUnlocked
                   ? "hover:translate-x-2 hover:border-amber-500/30 cursor-pointer"
                   : "opacity-50 grayscale cursor-not-allowed"
               )}
             >
+              {isGeneratingBasic && (
+                <div className="absolute inset-0 bg-amber-900/40 backdrop-blur-sm z-20 flex items-center justify-center gap-2 text-amber-300 font-bold uppercase tracking-widest text-xs">
+                   <Zap className="animate-pulse" size={16} /> Preparando Desafio de Fixação...
+                </div>
+              )}
               <div className={cn(
                 "w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-black/20 transition-all",
                 basicPassed ? "bg-emerald-500" : basicUnlocked ? "bg-amber-500 group-hover:scale-110" : "bg-zinc-700"
@@ -207,12 +248,19 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
               </div>
               <div className="flex-1">
                 <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Prática • Fixação</span>
-                <h3 className={cn(
-                  "text-xl font-bold transition-colors",
-                  basicUnlocked ? "text-white group-hover:text-amber-400" : "text-zinc-500"
-                )}>
-                  Desafio Básico da Aula
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className={cn(
+                    "text-xl font-bold transition-colors",
+                    basicUnlocked ? "text-white group-hover:text-amber-400" : "text-zinc-500"
+                  )}>
+                    Desafio Básico da Aula
+                  </h3>
+                  {basicUnlocked && (
+                    <span className="flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-black uppercase">
+                      <CheckCircle2 size={8} /> Alinhado
+                    </span>
+                  )}
+                </div>
                 {!basicUnlocked && (
                   <p className="text-xs text-zinc-600 mt-0.5">Conclua a aula para desbloquear</p>
                 )}
@@ -277,12 +325,19 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
               )}>
                 Certificação • Prova Final (IA)
               </span>
-              <h3 className={cn(
-                "text-xl font-bold transition-colors",
-                basicPassed ? "text-white group-hover:text-rose-400" : "text-zinc-500 uppercase italic tracking-tighter"
-              )}>
-                {basicPassed ? "Gerar Exame Final Definitivo" : "Bloqueado"}
-              </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className={cn(
+                    "text-xl font-bold transition-colors",
+                    basicPassed ? "text-white group-hover:text-rose-400" : "text-zinc-500 uppercase italic tracking-tighter"
+                  )}>
+                    {basicPassed ? "Gerar Exame Final Definitivo" : "Bloqueado"}
+                  </h3>
+                  {basicPassed && (
+                    <span className="flex items-center gap-1 text-[8px] px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-black uppercase">
+                      <CheckCircle2 size={8} /> Alinhado
+                    </span>
+                  )}
+                </div>
               {!basicPassed && (
                 <p className="text-xs text-zinc-600 mt-0.5">Tire 100% no Desafio Básico para desbloquear</p>
               )}

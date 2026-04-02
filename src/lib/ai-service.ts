@@ -29,12 +29,12 @@ const getGrokInstance = () => {
   });
 };
 
-export const getChatModel = (useFallback = false) => {
+export const getChatModel = (useFallback = false, modelType: "standard" | "versatile" = "versatile") => {
   if (useFallback) {
     return getGrokInstance()("grok-beta");
   }
   
-  return getGroqInstance()("llama-3.3-70b-versatile");
+  return getGroqInstance()(modelType === "versatile" ? "llama-3.3-70b-versatile" : "llama3-70b-8192");
 };
 
 export const getQuizModel = (useFallback = false) => {
@@ -43,6 +43,10 @@ export const getQuizModel = (useFallback = false) => {
   }
 
   return getGroqInstance()("llama-3.1-8b-instant");
+};
+
+export const getVisionModel = () => {
+  return getGroqInstance()("llama-3.2-11b-vision-preview");
 };
 
 /**
@@ -86,25 +90,106 @@ export async function askAI(
     ...(messages ? { messages } : { prompt })
   });
 
-  // Sênior: Restaurando o Groq (Llama 3.3) como motor primário pela alta velocidade
+  // Sênior: Motor Primário (High Speed)
   try {
-    console.log(`[AI INFO] Invocando Groq (Llama) como primário para ${type}...`);
+    console.log(`[AI INFO] Invocando Groq (Llama) primário para ${type}...`);
     const model = type === "chat" ? getChatModel() : type === "redacao" ? getRedacaoDetectiveModel() : getQuizModel();
     return await generateText(getCallArgs(model) as any);
   } catch (error: any) {
-    console.error(`[AI ERROR] Falha no Groq (Llama):`, error.message);
+    console.error(`[AI ERROR] Falha no Groq Primário:`, error.message);
     
+    // Fallback 1: Groq com modelo 70B padrão (menos Versátil, mais estável)
     try {
-      console.log(`[AI INFO] Tentando fallback Grok (xAI) para ${type}...`);
-      const fallbackModel = type === "chat" ? getChatModel(true) : type === "redacao" ? getRedacaoDetectiveModel(true) : getQuizModel(true);
-      return await generateText(getCallArgs(fallbackModel) as any);
-    } catch (fallbackError: any) {
-      console.error(`[AI FATAL ERROR] Todos os modelos falharam.`);
-      // Se a falha for falta de chave do Grok, damo uma dica clara
-      if (fallbackError.message.includes("GROK_API_KEY")) {
-        throw new Error("O servidor do Groq está instável e você ainda não configurou a chave do Grok (xAI) no seu .env para o backup definitivo.");
+      console.log(`[AI INFO] Tentando Fallback 1: Groq Llama3-70b...`);
+      const fallbackModel1 = getChatModel(false, "standard");
+      return await generateText(getCallArgs(fallbackModel1) as any);
+    } catch (f1Error: any) {
+      console.error(`[AI ERROR] Falha no Fallback 1 (Groq Standard):`, f1Error.message);
+
+      // Fallback 2: Grok (xAI) - O motor de Elite
+      try {
+        console.log(`[AI INFO] Tentando Fallback 2: Grok (xAI)...`);
+        const fallbackModel2 = type === "chat" ? getChatModel(true) : type === "redacao" ? getRedacaoDetectiveModel(true) : getQuizModel(true);
+        return await generateText(getCallArgs(fallbackModel2) as any);
+      } catch (f2Error: any) {
+        console.error(`[AI FATAL ERROR] Todos os modelos falharam.`);
+        throw new Error(`Serviços de IA saturados. Erro: ${f2Error.message}`);
       }
-      throw new Error(`Serviços de IA indisponíveis no momento. Verifique suas cotas e chaves de API.`);
     }
+  }
+}
+
+/**
+ * SCANNER DE ELITE - VALIDAÇÃO DE NOME
+ * Analisa se o nome sugerido contém gírias de baixo calão, 
+ * insinuações sexuais (saliência) ou duplo sentido ofensivo.
+ */
+export async function validateNameSafety(name: string): Promise<{ safe: boolean; reason?: string }> {
+  const prompt = `Analise o seguinte nome de usuário para uma plataforma de estudos: "${name}".
+  
+  REGRAS RÍGIDAS DE MODERAÇÃO:
+  1. Nomes com "duplo sentido" pornográfico ou sugestivo são PROIBIDOS.
+  2. Palavrões, gírias de baixo calão ou insultos são PROIBIDOS.
+  3. Alusões a órgãos sexuais ou atos obscenos são PROIBIDAS.
+  4. Nomes de "memes" inofensivos são permitidos.
+  
+  RESPONDA APENAS EM FORMATO JSON:
+  {
+    "safe": true/false,
+    "reason": "Explicação curta caso seja unsafe (em português)"
+  }`;
+
+  try {
+    const { text } = await askAI(prompt, "Você é um moderador de nomes profissional e rigoroso.");
+    
+    // Sênior: Extração segura de JSON (caso a IA coloque markdown)
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return { safe: true }; // Fallback seguro
+    
+    const result = JSON.parse(jsonMatch[0]);
+    return { 
+      safe: !!result.safe, 
+      reason: result.reason || "Nome inapropriado detectado." 
+    };
+  } catch (error) {
+    console.error("[AI SAFETY ERROR]:", error);
+    return { safe: true }; // Em caso de erro na API, não travamos o cadastro (Fallback User Friendly)
+  }
+}
+
+export async function askVisionAI(
+  prompt: string,
+  image: string, // Base64
+  system: string
+) {
+  const visionSystem = `${system}\n\nREGRAS DE SEGURANÇA E PEDAGOGIA:
+1. Se a imagem contiver qualquer conteúdo impróprio, obsceno ou não relacionado a estudos, RECUSE-SE a responder e peça ao aluno para focar no ENEM.
+2. Identifique textos, fórmulas e gráficos na imagem.
+3. Não dê apenas a resposta, explique o raciocínio pedagógico.`;
+
+  try {
+    // Sênior: Limpando o prefixo Base64 se existir (Data URL -> Raw Base64)
+    const base64Data = image.includes("base64,") 
+      ? image.split("base64,")[1] 
+      : image;
+
+    const model = getVisionModel();
+    return await generateText({
+      model,
+      system: visionSystem,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: prompt || "Analise esta atividade e me ajude a entender." },
+            { type: "image", image: base64Data },
+          ],
+        },
+      ],
+      temperature: 0.5,
+    });
+  } catch (error: any) {
+    console.error(`[VISION ERROR SÊNIOR]: ${error.message}`);
+    throw new Error(`O motor de visão falhou. Motivo: ${error.message}`);
   }
 }

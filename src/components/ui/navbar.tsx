@@ -101,9 +101,9 @@ export function Navbar() {
       </nav>
 
       {/* Mobile Navbar (Bottom Floating Bar) */}
-      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-md">
-        <div className="glass rounded-[2.5rem] px-4 py-3 flex items-center justify-between border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
-          {navItems.slice(0, 4).map((item) => {
+      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[96%] max-w-md">
+        <div className="glass rounded-[2.5rem] px-4 py-3 flex items-center gap-6 overflow-x-auto no-scrollbar snap-x border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+          {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link

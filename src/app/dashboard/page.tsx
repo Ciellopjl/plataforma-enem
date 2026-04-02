@@ -2,7 +2,7 @@ import { ProgressBar, Button } from "@/components/ui/base-ui";
 import { SubjectCard } from "@/components/ui/subject-card";
 import { Trophy, Flame, Target, BookOpen, Clock, GraduationCap, Star, Users, Shield, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { cn, getDaysUntilEnem } from "@/lib/utils";
+import { cn, getDaysUntilEnem, formatName } from "@/lib/utils";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
@@ -166,7 +166,7 @@ export default async function DashboardPage() {
           <div>
             <h1 className="text-3xl font-bold text-white tracking-tight">Painel de Estudos</h1>
             <p className="text-zinc-400">
-              Bem-vindo de volta, {session.user.name?.split(" ")[0]}! 
+              Bem-vindo de volta, {formatName(session.user.name, session.user.email)}! 
               {getDaysUntilEnem() > 0 ? ` Faltam ${getDaysUntilEnem()} dias para o ENEM.` : " Chegou o ENEM! Mantenha a calma e arrebente."}
             </p>
           </div>

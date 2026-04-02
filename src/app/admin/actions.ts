@@ -24,7 +24,7 @@ export async function getLogs() {
   await ensureAdmin();
   return await (prisma as any).activityLog.findMany({
     orderBy: { createdAt: "desc" },
-    take: 50, // Top 50 ações recentes
+    take: 50,
     include: {
       user: {
         select: {
@@ -33,6 +33,22 @@ export async function getLogs() {
           image: true,
         }
       }
+    }
+  });
+}
+
+/**
+ * Registrar uma nova ação no sistema de auditoria
+ */
+export async function createLog(action: string, details?: string) {
+  const session = await auth();
+  if (!session?.user?.id) return;
+
+  await (prisma as any).activityLog.create({
+    data: {
+      userId: session.user.id,
+      action,
+      details
     }
   });
 }
@@ -121,4 +137,35 @@ export async function toggleUserRole(userId: string) {
   });
 
   revalidatePath("/admin");
+}
+
+/**
+ * MODO DEUS: Alternar seu próprio cargo instantaneamente (Apenas para o dono do site)
+ */
+export async function toggleMyRole() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  const email = session?.user?.email;
+
+  if (email !== SUPER_ADMIN_EMAIL) {
+    throw new Error("Acesso negado: Somente o Administrador Supremo pode usar este comando.");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true }
+  }) as any;
+
+  const newRole = user.role === "ADMIN" ? "STUDENT" : "ADMIN";
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { role: newRole }
+  });
+
+  await createLog("God Mode", `Trocou seu próprio cargo para ${newRole}`);
+  
+  revalidatePath("/");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
 }

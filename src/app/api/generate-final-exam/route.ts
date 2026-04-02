@@ -19,11 +19,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Faltando subjectId" }, { status: 400 });
     }
 
-    // 1. Obter detalhes da matéria para contexto
+    // 1. Obter detalhes da matéria + aulas para contexto real
     const subject = await prisma.subject.findUnique({
       where: { id: subjectId },
       include: {
-        contents: true,
+        lessons: { orderBy: { order: "asc" } },
       }
     });
 
@@ -46,29 +46,32 @@ export async function POST(req: Request) {
     }
 
     // 3. Se não existe, pedir à IA para gerar 20 questões + tema de redação
-    const contentNames = subject.contents.map(c => c.title).join(", ");
+    const lessonTopics = (subject as any).lessons.map((l: any) => l.title).join(", ");
+    const topicContext = lessonTopics || `Fundamentos de ${subject.name}`;
+
+    console.log(`🎓 Gerando Prova Final para ${subject.name} com temas: ${topicContext}`);
     
     const promptMessage = `Você é o "Mestre ENEM Avaliador". Elabore a PROVA FINAL de certificação para a disciplina de ${subject.name}.
-    Os tópicos estudados pelo aluno foram: ${contentNames || "Fundamentos de " + subject.name}.
+    Os temas OBRIGATÓRIOS desta prova são: ${topicContext}.
     
-    Você deve retornar um objeto JSON perfeitamente estruturado contendo exatamente 20 questões de múltipla escolha (com 4 alternativas cada, onde apenas 1 está correta) e 1 proposta de redação/texto argumentativo. A proposta de redação deve ser desafiadora e coerente com o nível exigido pelos vestibulares (ENEM/FUVEST).
+    As 20 questões de múltipla escolha DEVEM OBRIGATORIAMENTE abordar esses temas específicos, com distribuição proporcional entre eles. É TOTALMENTE PROIBIDO gerar questões de Matemática ou outra matéria se a disciplina for ${subject.name}. Use o estilo do ENEM com nível de dificuldade elevado. A proposta de redação deve estar diretamente relacionada a um desses temas.
     
-    O formato do JSON OBRIGATÓRIO (sem markdown, sem chaves externas de resposta, apenas raw JSON):
+    Retorne EXCLUSIVAMENTE o JSON abaixo, sem markdown, sem texto adicional:
     {
       "title": "Prova Final: ${subject.name}",
-      "description": "Exame de Certificação Definitivo gerado por IA.",
+      "description": "Exame de Certificação — ${topicContext}",
       "questions": [
         {
-          "text": "Texto da questão 1",
+          "text": "Enunciado completo da questão 1 sobre [tema específico]",
           "options": [
-            { "text": "Opção A", "isCorrect": true },
-            { "text": "Opção B", "isCorrect": false },
-            { "text": "Opção C", "isCorrect": false },
-            { "text": "Opção D", "isCorrect": false }
+            { "text": "Alternativa A (correta)", "isCorrect": true },
+            { "text": "Alternativa B", "isCorrect": false },
+            { "text": "Alternativa C", "isCorrect": false },
+            { "text": "Alternativa D", "isCorrect": false }
           ]
         }
       ],
-      "essayPrompt": "TEMA DA REDAÇÃO: [Sua proposta de tema aqui...]"
+      "essayPrompt": "TEMA DA REDAÇÃO relacionado a ${subject.name}: [proposta desafiadora e específica]"
     }`;
 
     console.log("Chamando Llama 70B para gerar prova final (Maior qualidade estrutural)...");
@@ -138,12 +141,12 @@ export async function POST(req: Request) {
         if (correctIndex !== -1 && dbQ.options[correctIndex]) {
             await prisma.question.update({
                 where: { id: dbQ.id },
-                data: { correctOptionId: dbQ.options[correctIndex].id }
+                data: { correctOptionId: dbQ.options[correctIndex].id } as any
             });
         } else if (dbQ.options.length > 0) {
             await prisma.question.update({
                 where: { id: dbQ.id },
-                data: { correctOptionId: dbQ.options[0].id }
+                data: { correctOptionId: dbQ.options[0].id } as any
             });
         }
     }

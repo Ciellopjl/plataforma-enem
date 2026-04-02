@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { askAI } from "@/lib/ai-service";
+import { askAI, askVisionAI } from "@/lib/ai-service";
 
 export async function POST(req: Request) {
   try {
@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const userEmail = (session?.user?.email || "").toLowerCase();
     const isDev = userEmail === devEmail && devEmail.length > 5;
     
-    const { messages, context } = await req.json();
+    const { messages, context, image } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: "Formato de mensagens inválido" }, { status: 400 });
@@ -42,22 +42,40 @@ Mantenha a persona do Mestre ENEM, mas com um tom de parceria exclusiva e reconh
 
     // DEFINITIVO: Usando GROQ Llama 3 70B (Alta Qualidade e Gratuito)
     try {
-      const { askAI } = require("@/lib/ai-service");
-      const { text } = await askAI(
-        lastMessage, 
-        systemInstruction, 
-        isRedacaoAudit ? "redacao" : "chat"
-      );
+      let result;
 
-      return NextResponse.json({ text });
+      if (image) {
+        console.log("[AI VISION] Analisando imagem de atividade...");
+        result = await askVisionAI(
+          messages[messages.length - 1].content || "Analise esta imagem.",
+          image,
+          systemInstruction
+        );
+      } else {
+        result = await askAI(
+          lastMessage, 
+          systemInstruction, 
+          isRedacaoAudit ? "redacao" : "chat"
+        );
+      }
+
+      return NextResponse.json({ text: result.text });
     } catch (apiError: any) {
-      console.error("[GROQ ERROR]:", apiError.message);
+      console.error("[GROQ ERROR SÊNIOR]:", apiError.message);
       
-      // Mestre ENEM - MODO CONTINGÊNCIA (Sênior)
+      // Mestre ENEM - ORQUESTRAÇÃO DE CONTINGÊNCIA SÊNIOR
+      // Se for o Criador, damos o erro real para depuração rápida
+      if (isDev) {
+        return NextResponse.json({ 
+          text: `⚠️ [MODO DEPURAÇÃO] Chefe, tive um erro técnico no motor principal (Groq/Grok). Verifique sua cota ou a chave de API. Erro: ${apiError.message.substring(0, 100)}...` 
+        });
+      }
+
       const fallbackAnswers = [
         "Opa! Tive um pequeno pico de acessos aqui nos meus servidores. Enquanto eu me recupero, lembre-se: o segredo do ENEM é a constância! Que tal revisar o conteúdo de Redação ou Biologia agora?",
         "Estou processando muitas informações de alunos agora! Uma dica de mestre: foque em entender a base teórica antes de partir para os simulados pesados. Já deu uma olhada nos materiais de hoje?",
-        "Minha conexão com a base de dados central está oscilando, mas meu compromisso com você não! Continue firme nos estudos e tente me perguntar novamente em alguns minutos."
+        "Minha conexão com a base de dados central está oscilando, mas meu compromisso com você não! Continue firme nos estudos e tente me perguntar novamente em alguns minutos.",
+        "Muitas mentes brilhantes estudando ao mesmo tempo! Enquanto isso, não esqueça de beber água e dar uma lida nas competências da Redação nota 1000."
       ];
       
       const randomAnswer = fallbackAnswers[Math.floor(Math.random() * fallbackAnswers.length)];

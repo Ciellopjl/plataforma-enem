@@ -19,6 +19,7 @@ type CorrectionResult = {
   c5: { score: number; explanation: string };
   total: number;
   feedback: string;
+  teacherFeedback?: string;
   structure?: {
     intro: string;
     dev: string;
@@ -52,6 +53,7 @@ export default function RedacaoPage() {
         content: e.content,
         total: e.score,
         feedback: e.feedback,
+        teacherFeedback: (e as any).teacherFeedback || undefined,
         c1: { score: e.c1, explanation: "" },
         c2: { score: e.c2, explanation: "" },
         c3: { score: e.c3, explanation: "" },
@@ -259,6 +261,19 @@ export default function RedacaoPage() {
                 <div className="text-6xl font-black text-white">{result.total} <span className="text-emerald-500/50 text-3xl">/ 1000</span></div>
                 <p className="text-sm text-zinc-400 mt-4 leading-relaxed line-clamp-2 md:line-clamp-none">{result.feedback}</p>
               </div>
+
+              {/* Feedback Humano (Sênior) */}
+              {result.teacherFeedback && (
+                <div className="glass p-6 rounded-3xl border border-primary-500/30 bg-primary-500/10 animate-in slide-in-from-left-4 duration-500">
+                   <div className="flex items-center gap-3 mb-3">
+                      <MessageSquare className="text-primary-400" size={20} />
+                      <h3 className="text-xs font-black uppercase tracking-widest text-primary-400">Feedback do Mentor Humano</h3>
+                   </div>
+                   <p className="text-sm text-zinc-200 leading-relaxed italic">
+                      "{result.teacherFeedback}"
+                   </p>
+                </div>
+              )}
 
               {/* Detecção de IA */}
               <div className={cn(

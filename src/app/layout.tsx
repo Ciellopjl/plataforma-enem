@@ -27,6 +27,7 @@ export const viewport = {
 import { Providers } from "@/components/Providers";
 import { AiTutor } from "@/components/ui/ai-tutor";
 import { Heartbeat } from "@/components/auth/heartbeat";
+import { AnnouncementBanner } from "@/components/layout/AnnouncementBanner";
 
 export default function RootLayout({
   children,
@@ -38,6 +39,7 @@ export default function RootLayout({
       <body className={cn(inter.className, "antialiased bg-black text-zinc-100 min-h-screen selection:bg-primary-500/30")}>
         <Providers>
           <Navbar />
+          <AnnouncementBanner />
           {/* Padding superior para Desktop (Navbar Top) e Padding inferior para Mobile (Navbar Bottom) */}
           <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 pb-32 md:pb-16 transition-all duration-300">
             <div className="animate-in fade-in duration-1000">

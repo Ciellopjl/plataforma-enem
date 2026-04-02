@@ -1,7 +1,7 @@
 "use client";
 
 import { Search, Users, Shield, Ban, Loader2, ShieldCheck, Crown, UserRound } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatName } from "@/lib/utils";
 import { AdminUser } from "../types";
 import Image from "next/image";
 
@@ -206,7 +206,7 @@ function UserRow({
               "text-sm font-bold transition-colors",
               variant === "admin" ? "text-amber-100 group-hover:text-amber-300" : "text-white group-hover:text-primary-400"
             )}>
-              {user.name || "Sem Nome"}
+              {formatName(user.name, user.email)}
             </span>
             <span className="text-[11px] text-zinc-500 italic opacity-60">{user.email}</span>
           </div>

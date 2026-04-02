@@ -69,23 +69,25 @@ export async function POST(req: Request) {
 
     let subjectDb = await prisma.subject.findFirst({
       where: { name: { contains: randomSubject, mode: "insensitive" } },
-      include: { lessons: true, contents: true }
+      include: { lessons: true }
     });
-    if (!subjectDb) subjectDb = await (prisma.subject.findFirst({ include: { lessons: true, contents: true } }) as any);
-    if (!subjectDb) return NextResponse.json({ error: "Banco sem matérias. Rode o seed." }, { status: 500 });
 
-    // Contexto dos materiais cadastrados na matéria
-    const lessonTitles = (subjectDb as any).lessons?.map((l: any) => l.title).join(", ") || "";
-    const lessonContent = (subjectDb as any).lessons?.map((l: any) => l.content).join(" | ").substring(0, 500) || "";
+    // Se não encontrou a matéria específica, não passamos lições de outra matéria como contexto!
+    const lessonTitles = subjectDb?.lessons?.map((l: any) => l.title).join(", ") || "";
+    const lessonContent = ""; // Removendo content denso para evitar confusão da IA
 
     const aiData = await generateDailyChallenge(randomSubject, 5, difficulty, lessonTitles, lessonContent);
+
+    // Pivot para salvar no banco (se subjectDb for null, usamos um padrão para vincular o Quiz)
+    const finalSubjectId = subjectDb?.id || (await prisma.subject.findFirst())?.id;
+    if (!finalSubjectId) return NextResponse.json({ error: "Banco sem matérias." }, { status: 500 });
 
     // 3. Criação Atômica do Simulado (Padrão Sênior: Alta Performance)
     const newQuiz = await prisma.quiz.create({
       data: {
         title: aiData.title || `Desafio Diário: ${randomSubject}`,
         description: aiData.description || `Nível ${difficulty} gerado por IA.`,
-        subjectId: subjectDb.id,
+        subjectId: finalSubjectId,
         dailyChallenges: {
           create: {
             userId,
@@ -122,7 +124,7 @@ export async function POST(req: Request) {
 
         return prisma.question.update({
           where: { id: dbQuestion.id },
-          data: { correctOptionId: correctDbOption?.id }
+          data: { correctOptionId: correctDbOption?.id } as any
         });
       })
     );

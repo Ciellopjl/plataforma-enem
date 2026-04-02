@@ -40,6 +40,10 @@ const CONTINGENCY_DB: Record<string, any[]> = {
     { text: "(ENEM) O período da Ditadura Militar no Brasil iniciou-se em:", options: ["1930", "1945", "1964", "1985", "1922"], correctOptionIndex: 2 },
     { text: "(ENEM) A Primeira Guerra Mundial ocorreu entre:", options: ["1914 e 1918", "1939 e 1945", "1910 e 1914", "1918 e 1922", "1889 e 1895"], correctOptionIndex: 0 },
     { text: "(ENEM) A democracia surgiu na Grécia Antiga, especificamente em:", options: ["Esparta", "Atenas", "Tebas", "Corinto", "Macedônia"], correctOptionIndex: 1 }
+  ],
+  "Atualidades": [
+    { text: "(ENEM) O conceito de 'Guerra Híbrida' no cenário geopolítico contemporâneo refere-se a:", options: ["Uso exclusivo de armas nucleares.", "Conflitos que mesclam táticas militares, cibernéticas e desinformação.", "Guerras travadas apenas no ambiente digital.", "Disputas comerciais sem envolvimento militar.", "Conflitos entre drones autônomos."], correctOptionIndex: 1 },
+    { text: "(ENEM) O Acordo de Paris (2015) tem como objetivo principal no cenário global:", options: ["Regular o comércio de criptomoedas.", "Reduzir a desigualdade social na Europa.", "Cessar conflitos no Oriente Médio.", "Limitar o aumento da temperatura global abaixo de 2°C.", "Padronizar o sistema educacional mundial."], correctOptionIndex: 3 }
   ]
 };
 
@@ -55,9 +59,10 @@ export async function generateDailyChallenge(
     ? `\n\nO aluno estudou: ${lessonTitles}. Contexto: ${lessonContext.substring(0, 300)}.`
     : "";
 
-  const systemPrompt = `Você é um professor especialista em ENEM. Gere EXATAMENTE ${numQuestions} questões de nível ${difficultyDesc}.
+  const systemPrompt = `Você é um professor especialista em ENEM da disciplina de ${subjectName}. Gere EXATAMENTE ${numQuestions} questões de nível ${difficultyDesc}.
 
 REGRAS DE OURO:
+- Você deve gerar questões EXCLUSIVAMENTE sobre a matéria de ${subjectName}. É terminantemente PROIBIDO gerar questões de Matemática ou outra matéria se o tema for Atualidades ou Linguagens.
 - Cada questão deve ter 4 alternativas realistas (A, B, C, D).
 - Enunciados densos e contextuais padrão ENEM.
 - Responda EXCLUSIVAMENTE no formato JSON puro, sem textos adicionais.
@@ -82,7 +87,7 @@ FORMATO DO JSON (Exemplo):
       model,
       system: systemPrompt,
       prompt: `Gere questões de ${subjectName} focadas no ENEM.${contextPart}`,
-      temperature: 0.8,
+      temperature: 0.4, // Mais rígido para evitar mistura de matérias
     });
 
     // Extração robusta de JSON
