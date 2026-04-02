@@ -138,6 +138,7 @@ model Question {
   id              String   @id @default(cuid())
   text            String
   quizId          String
+  correctOptionId String?
   options         Option[]
   quiz            Quiz     @relation(fields: [quizId], references: [id])
 }
