@@ -24,7 +24,10 @@ const nextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '5mb'
-    }
+    },
+    // Limita o uso de CPU e memória durante o build para não estourar os limites da Vercel (Free)
+    workerThreads: false,
+    cpus: 1
   },
   eslint: {
     ignoreDuringBuilds: true,
