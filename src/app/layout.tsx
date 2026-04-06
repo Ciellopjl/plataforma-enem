@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";

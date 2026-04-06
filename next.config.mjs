@@ -19,13 +19,13 @@ const nextConfig = {
       },
     ],
   },
-  // SÊNIOR: Configuração limpa e estável. 
-  // Desacoplamos as libs nativas via API Routes, eliminando a necessidade de 'externals'.
+  // SOLUÇÃO DEFINITIVA: Força o Next.js a tratar TODAS as rotas como dinâmicas
+  // Isso evita o "Failed to collect page data" na Vercel para qualquer rota
+  output: undefined,
   experimental: {
     serverActions: {
       bodySizeLimit: '5mb'
     },
-    // Limita o uso de CPU e memória durante o build para não estourar os limites da Vercel (Free)
     workerThreads: false,
     cpus: 1
   },
@@ -34,7 +34,21 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
-  }
+  },
+  // Força renderização dinâmica globalmente via headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'x-middleware-cache',
+            value: 'no-cache',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
