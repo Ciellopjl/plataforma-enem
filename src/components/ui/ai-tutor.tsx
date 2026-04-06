@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send, Bot, User, Sparkles, Camera, Image as ImageIcon, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
+import { motion, AnimatePresence, useAnimation } from "framer-motion";
 
 type Message = {
   role: "user" | "model";
@@ -20,8 +21,36 @@ export function AiTutor() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const controls = useAnimation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const constraintsRef = useRef<HTMLDivElement>(null);
+  const [windowSize, setWindowSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    // Definir tamanho da janela apenas no cliente
+    setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+
+    // Carregar histórico de mensagens
+    const loadHistory = async () => {
+      try {
+        const response = await fetch("/api/chat/history");
+        if (response.ok) {
+          const history = await response.json();
+          if (history && history.length > 0) {
+            setMessages(history.map((m: any) => ({
+              role: m.role === "assistant" ? "model" : "user",
+              content: m.content
+            })));
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao carregar histórico:", err);
+      }
+    };
+
+    loadHistory();
+  }, []);
 
   // Esconder tutor durante simulados (Modo Foco) - Movido para garantir que todos os hooks acima carreguem
   const isFocusMode = pathname.startsWith("/simulados/desafio/");
@@ -111,162 +140,209 @@ export function AiTutor() {
   };
 
   return (
-    <div className="fixed bottom-32 right-4 md:bottom-6 md:right-6 z-50">
-      {/* Botão flutuante */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="bg-primary-600 hover:bg-primary-500 text-white p-4 rounded-full shadow-2xl hover:shadow-primary-500/40 transition-all hover:scale-110 flex items-center justify-center group relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <MessageCircle className="w-6 h-6 transition-transform group-hover:rotate-12" />
-          <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-zinc-950 shadow-sm" />
-        </button>
-      )}
-
-      {/* Janela do Chat */}
-      {isOpen && (
-        <div className="bg-zinc-900/50 backdrop-blur-xl border border-white/5 w-[90vw] md:w-[380px] h-[75vh] md:h-[550px] rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 slide-in-from-bottom-10 duration-500 ease-out">
-          {/* Header Minimalista */}
-          <div className="p-5 flex items-center justify-between border-b border-white/5">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="bg-gradient-to-tr from-primary-600 to-primary-400 p-2 rounded-2xl shadow-lg shadow-primary-600/20">
-                  <Bot className="w-5 h-5 text-white" />
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-zinc-900" />
-              </div>
-              <div>
-                <h3 className="text-zinc-100 font-semibold text-sm tracking-tight">Tutor Inteligente</h3>
-                <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium">Pronto para ajudar</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsOpen(false)}
-              className="bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-400 hover:text-white p-2 rounded-xl transition-all"
+    <div className="fixed inset-0 pointer-events-none z-50">
+      <div ref={constraintsRef} className="absolute inset-4 md:inset-8 pointer-events-none" />
+      <motion.div
+        drag={!isOpen}
+        dragConstraints={constraintsRef}
+        dragElastic={0.1}
+        animate={controls}
+        className={`fixed bottom-32 right-4 md:bottom-10 md:right-10 pointer-events-auto z-[60] ${!isOpen ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      >
+        {/* Botão flutuante com AnimatePresence */}
+        <AnimatePresence mode="wait">
+          {!isOpen && (
+            <motion.div
+              className="flex items-center gap-3"
+              initial="initial"
+              whileHover="hover"
             >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 scrollbar-hide">
-            {messages.map((m, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-500",
-                  m.role === "user" ? "flex-reverse justify-end" : "justify-start"
-                )}
+              {/* Tooltip Lateral Simples e Sênior */}
+              <motion.div
+                variants={{
+                  initial: { opacity: 0, x: 20 },
+                  hover: { opacity: 1, x: 0 }
+                }}
+                className="hidden md:flex bg-zinc-900/90 backdrop-blur-md border border-white/10 px-4 py-2 rounded-2xl text-[12px] font-semibold text-primary-400 shadow-xl pointer-events-none whitespace-nowrap mb-0.5"
               >
-                {m.role === "model" && (
-                  <div className="w-7 h-7 bg-zinc-800 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/5 mb-1">
-                    <Bot className="w-4 h-4 text-primary-400" />
-                  </div>
-                )}
-                
-                <div
-                  className={cn(
-                    "max-w-[80%] flex flex-col gap-2",
-                    m.role === "user" ? "items-end" : "items-start"
-                  )}
-                >
-                  {m.image && (
-                    <img 
-                      src={m.image} 
-                      alt="Anexo" 
-                      className="max-w-full h-auto rounded-xl border border-white/10 shadow-sm animate-in zoom-in duration-300"
-                    />
-                  )}
-                  {m.content && (
-                    <div
-                      className={cn(
-                        "px-4 py-3 text-[13.5px] leading-relaxed shadow-sm",
-                        m.role === "user"
-                          ? "bg-primary-600 text-white rounded-[1.2rem] rounded-br-[0.2rem] font-medium"
-                          : "bg-zinc-800/80 text-zinc-100 rounded-[1.2rem] rounded-bl-[0.2rem] border border-white/5 backdrop-blur-sm"
-                      )}
-                    >
-                      {m.content}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-            
-            {isLoading && (
-              <div className="flex items-end gap-2">
-                <div className="w-7 h-7 bg-zinc-800 rounded-xl flex items-center justify-center animate-pulse">
-                  <Bot className="w-4 h-4 text-primary-400" />
-                </div>
-                <div className="bg-zinc-800/50 border border-white/5 text-zinc-400 rounded-[1.2rem] rounded-bl-[0.2rem] px-4 py-3 flex gap-1.5 items-center">
-                  <span className="w-1 h-1 rounded-full bg-primary-500 animate-[bounce_1s_infinite_0ms]"></span>
-                  <span className="w-1 h-1 rounded-full bg-primary-500 animate-[bounce_1s_infinite_200ms]"></span>
-                  <span className="w-1 h-1 rounded-full bg-primary-500 animate-[bounce_1s_infinite_400ms]"></span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+                Alguma dúvida? <Sparkles className="w-3 h-3 ml-1.5" />
+              </motion.div>
 
-          <form onSubmit={handleSubmit} className="p-4 bg-zinc-900/40 border-t border-white/5 backdrop-blur-md">
-            {/* Preview da Imagem */}
-            {selectedImage && (
-              <div className="mb-3 relative inline-block animate-in zoom-in duration-200">
-                <img 
-                  src={selectedImage} 
-                  alt="Preview" 
-                  className="w-20 h-20 object-cover rounded-xl border-2 border-primary-500/50 shadow-lg shadow-primary-500/20"
-                />
+              <motion.button
+                key="tutor-btn"
+                layoutId="tutor-box"
+                initial={{ scale: 0, opacity: 0, rotate: -20 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                exit={{ scale: 0, opacity: 0 }}
+                onTap={() => {
+                  controls.start({ x: 0, y: 0, transition: { type: "spring", stiffness: 300, damping: 20 } });
+                  setIsOpen(true);
+                }}
+                whileHover={{ 
+                  scale: 1.1, 
+                  boxShadow: "0 0 25px rgba(99, 102, 241, 0.4)" 
+                }}
+                whileTap={{ scale: 0.9 }}
+                className="bg-gradient-to-tr from-primary-600 via-primary-500 to-indigo-600 text-white p-5 rounded-2xl md:rounded-[1.8rem] shadow-2xl flex items-center justify-center group relative overflow-hidden border border-white/20"
+              >
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <MessageCircle className="w-7 h-7 md:w-8 md:h-8 transition-transform group-hover:scale-110 group-hover:rotate-6" />
+                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-zinc-950 shadow-sm animate-pulse" />
+              </motion.button>
+            </motion.div>
+          )}
+
+          {/* Janela do Chat com AnimatePresence */}
+          {isOpen && (
+            <motion.div
+              key="tutor-chat"
+              layoutId="tutor-box"
+              initial={{ scale: 0.8, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 50 }}
+              className="bg-zinc-900/50 backdrop-blur-xl border border-white/5 w-[90vw] md:w-[380px] h-[75vh] md:h-[550px] rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col overflow-hidden"
+              style={{ originX: 1, originY: 1 }}
+            >
+              {/* Header Minimalista (Botão de Fechar) */}
+              <div className="p-5 flex items-center justify-between border-b border-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="bg-gradient-to-tr from-primary-600 to-primary-400 p-2 rounded-2xl shadow-lg shadow-primary-600/20">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-zinc-900" />
+                  </div>
+                  <div>
+                    <h3 className="text-zinc-100 font-semibold text-sm tracking-tight">Tutor Inteligente</h3>
+                    <p className="text-zinc-500 text-[10px] uppercase tracking-widest font-medium">Pronto para ajudar</p>
+                  </div>
+                </div>
                 <button
-                  type="button"
-                  onClick={() => setSelectedImage(null)}
-                  className="absolute -top-2 -right-2 bg-zinc-900 text-white p-1 rounded-full border border-white/10 hover:bg-red-500 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
+                  className="bg-zinc-800/50 hover:bg-zinc-700/50 text-zinc-400 hover:text-white p-2 rounded-xl transition-all"
                 >
-                  <X className="w-3 h-3" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-            )}
 
-            <div className="relative group transition-all duration-300">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={selectedImage ? "O que você quer saber sobre essa foto?" : "Como posso te ajudar agora?"}
-                className="w-full bg-zinc-800/40 backdrop-blur-sm border border-white/5 hover:border-white/10 rounded-2xl py-3.5 pl-12 pr-14 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500/40 outline-none transition-all shadow-inner"
-                disabled={isLoading}
-              />
-              
-              {/* Botão de Foto */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-primary-400 transition-colors"
-              >
-                <Camera className="w-5 h-5" />
-              </button>
-              
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleImageUpload} 
-                accept="image/*" 
-                className="hidden" 
-              />
+              <div className="flex-1 overflow-y-auto p-5 space-y-6 scrollbar-hide">
+                {messages.map((m, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "flex items-end gap-2",
+                      m.role === "user" ? "flex-row-reverse" : "justify-start"
+                    )}
+                  >
+                    {m.role === "model" && (
+                      <div className="w-7 h-7 bg-zinc-800 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/5 mb-1">
+                        <Bot className="w-4 h-4 text-primary-400" />
+                      </div>
+                    )}
+                    
+                    <div
+                      className={cn(
+                        "max-w-[80%] flex flex-col gap-2",
+                        m.role === "user" ? "items-end" : "items-start"
+                      )}
+                    >
+                      {m.image && (
+                        <img 
+                          src={m.image} 
+                          alt="Anexo" 
+                          className="max-w-full h-auto rounded-xl border border-white/10 shadow-sm"
+                        />
+                      )}
+                      {m.content && (
+                        <div
+                          className={cn(
+                            "px-4 py-3 text-[13.5px] leading-relaxed shadow-sm",
+                            m.role === "user"
+                              ? "bg-primary-600 text-white rounded-[1.2rem] rounded-br-[0.2rem] font-medium"
+                              : "bg-zinc-800/80 text-zinc-100 rounded-[1.2rem] rounded-bl-[0.2rem] border border-white/5 backdrop-blur-sm"
+                          )}
+                        >
+                          {m.content}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {isLoading && (
+                  <div className="flex items-end gap-2">
+                    <div className="w-7 h-7 bg-zinc-800 rounded-xl flex items-center justify-center animate-pulse">
+                      <Bot className="w-4 h-4 text-primary-400" />
+                    </div>
+                    <div className="bg-zinc-800/50 border border-white/5 text-zinc-400 rounded-[1.2rem] rounded-bl-[0.2rem] px-4 py-3 flex gap-1.5 items-center">
+                      <span className="w-1 h-1 rounded-full bg-primary-500 animate-[bounce_1s_infinite_0ms]"></span>
+                      <span className="w-1 h-1 rounded-full bg-primary-500 animate-[bounce_1s_infinite_200ms]"></span>
+                      <span className="w-1 h-1 rounded-full bg-primary-500 animate-[bounce_1s_infinite_400ms]"></span>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
 
-              <button
-                type="submit"
-                disabled={(!input.trim() && !selectedImage) || isLoading}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary-600 text-white rounded-xl hover:bg-primary-500 disabled:opacity-30 disabled:grayscale transition-all shadow-lg shadow-primary-600/20 active:scale-95"
-              >
-                <Send className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-[10px] text-zinc-600 text-center mt-2 font-medium">Equipe ENEM 2026 • Segurança Ativa</p>
-          </form>
-        </div>
-      )}
+              <form onSubmit={handleSubmit} className="p-4 bg-zinc-900/40 border-t border-white/5 backdrop-blur-md">
+                {/* Preview da Imagem */}
+                {selectedImage && (
+                  <div className="mb-3 relative inline-block">
+                    <img 
+                      src={selectedImage} 
+                      alt="Preview" 
+                      className="w-20 h-20 object-cover rounded-xl border-2 border-primary-500/50 shadow-lg shadow-primary-500/20"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setSelectedImage(null)}
+                      className="absolute -top-2 -right-2 bg-zinc-900 text-white p-1 rounded-full border border-white/10 hover:bg-red-500 transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
+                <div className="relative group transition-all duration-300">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder={selectedImage ? "O que você quer saber?" : "Como posso ajudar?"}
+                    className="w-full bg-zinc-800/40 backdrop-blur-sm border border-white/5 hover:border-white/10 rounded-2xl py-3.5 pl-12 pr-14 text-sm text-zinc-100 placeholder-zinc-500 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500/40 outline-none transition-all"
+                    disabled={isLoading}
+                  />
+                  
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isLoading}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-primary-400 transition-colors"
+                  >
+                    <Camera className="w-5 h-5" />
+                  </button>
+                  
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleImageUpload} 
+                    accept="image/*" 
+                    className="hidden" 
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={(!input.trim() && !selectedImage) || isLoading}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary-600 text-white rounded-xl hover:bg-primary-500 disabled:opacity-30 disabled:grayscale transition-all shadow-lg shadow-primary-600/20 active:scale-95"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }

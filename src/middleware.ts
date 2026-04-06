@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import { authConfig } from "@/lib/auth.config";
 import { NextResponse } from "next/server";
+import { neon } from "@neondatabase/serverless";
 
 /**
  * middleware.ts — Roda no Edge Runtime do Next.js
@@ -10,7 +11,7 @@ import { NextResponse } from "next/server";
  */
 const { auth } = NextAuth(authConfig);
 
-export default auth((req) => {
+export default auth(async (req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
 
@@ -33,6 +34,30 @@ export default auth((req) => {
 
   // 2. Permitir APIs de Autenticação sem interceptação
   if (isApiAuthRoute) return NextResponse.next();
+
+  // SÊNIOR: Verificação "Instantânea" de Segurança no Edge (via Neon HTTP)
+  if (isLoggedIn) {
+    const userId = (req.auth as any)?.user?.id;
+    if (userId) {
+      try {
+        const sql = neon(process.env.DATABASE_URL!);
+        const users = await sql`SELECT "isBlocked", "id" FROM "User" WHERE id = ${userId}`;
+        const dbUser = users[0];
+        
+        // Se aluno foi removido do banco OU bloqueado
+        if (!dbUser || dbUser.isBlocked) {
+          const response = NextResponse.redirect(new URL("/login?error=AccessDenied", nextUrl));
+          response.cookies.delete("authjs.session-token");
+          response.cookies.delete("__Secure-authjs.session-token");
+          response.cookies.delete("next-auth.session-token");
+          response.cookies.delete("__Secure-next-auth.session-token");
+          return response;
+        }
+      } catch (err) {
+        console.error("Erro Edge DB Auth Check:", err);
+      }
+    }
+  }
 
   // 3. Lógica de Redirecionamento de Auth
   if (isAuthRoute) {

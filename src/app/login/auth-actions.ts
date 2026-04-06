@@ -1,54 +1,57 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
-import { validateNameSafety } from "@/lib/ai-service";
+import { auth } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
+import { logActivity } from "@/lib/logger";
 
+/**
+ * Sênior: Ação para finalizar o perfil do aluno após o primeiro login via Google.
+ * Define o nome real e a senha de acesso para contingência.
+ */
 export async function updateProfile(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: "Sessão expirada. Faça login novamente." };
-  }
-
-  const name = formData.get("name")?.toString();
-  const password = formData.get("password")?.toString();
-
-  if (!name || !password) {
-    return { error: "Nome e senha são obrigatórios." };
-  }
-
-  if (password.length < 6) {
-    return { error: "A senha deve ter no mínimo 6 caracteres." };
-  }
-
   try {
-    // 1. Validar Nome via IA Scanner de Elite
-    console.log(`[AI MODERATION] Validando nome: ${name}...`);
-    const { safe, reason } = await validateNameSafety(name);
+    const session = await auth();
     
-    if (!safe) {
-      return { error: `Nome Recusado: ${reason}` };
+    if (!session?.user?.email) {
+      return { success: false, error: "Sessão expirada ou inválida. Faça login novamente." };
     }
 
-    // 2. Hash da Senha
+    const name = formData.get("name")?.toString().trim();
+    const password = formData.get("password")?.toString();
+
+    if (!name || !password) {
+      return { success: false, error: "Nome e Senha são obrigatórios." };
+    }
+
+    if (password.length < 6) {
+      return { success: false, error: "A senha deve ter pelo menos 6 caracteres." };
+    }
+
+    // Criptografia Hashed para segurança máxima
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. Atualizar Usuário
+    // Atualiza o registro do aluno no Banco de Dados
     await prisma.user.update({
-      where: { id: (session.user as any).id },
+      where: { email: session.user.email },
       data: {
         name,
         password: hashedPassword,
-      }
+      },
     });
 
-    revalidatePath("/");
-    return { success: true, message: "Perfil finalizado com sucesso!" };
+    // Auditoria para o Painel Admin
+    await logActivity(
+      "📝 Perfil Finalizado", 
+      `O aluno definiu o nome real (${name}) e criou sua senha de acesso.`, 
+      (session.user as any).id
+    );
 
+    revalidatePath("/dashboard");
+    return { success: true };
   } catch (error: any) {
     console.error("[UPDATE_PROFILE_ERROR]:", error);
-    return { error: "Falha ao processar o cadastro." };
+    return { success: false, error: "Erro interno ao salvar seus dados." };
   }
 }

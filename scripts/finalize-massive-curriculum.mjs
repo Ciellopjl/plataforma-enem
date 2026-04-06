@@ -58,32 +58,31 @@ async function main() {
       { t: "Guerras Mundiais (I e II)", v: "f-f7N9IIDp0" }
     ],
     "geografia": [
-      { t: "Globalização", v: "7u0G_W3vL60" },
-      { t: "Meio Ambiente", v: "LqU9p2Z_E5M" },
-      { t: "Geopolítica Mundial", v: "L-3f2N90l_U" }
+      { t: "Globalização", v: "4Bc3KVXJZzA" },
+      { t: "Meio Ambiente (COP-30)", v: "7N2Ao6NsD5E" },
+      { t: "Geopolítica Mundial", v: "VYfMr7FcDq0" }
     ],
     "filosofia": [
-      { t: "Filosofia Clássica", v: "XshFshLREzQ" },
-      { t: "Ética e Política", v: "3S36fGshxM0" }
+      { t: "Filosofia Clássica", v: "tlwQpiKg18M" },
+      { t: "Ética (Aristóteles)", v: "FHF1HBpjLXw" }
     ],
     "sociologia": [
-      { t: "Desigualdade Social e Capitalismo", v: "Yf0X-y_xS-U" }
+      { t: "Desigualdade Social", v: "zHMUzQhv9fM" }
     ],
     "biologia": [
-      { t: "Ecologia (Cadeias e Ciclos)", v: "itfC8uH8M7M" },
-      { t: "Genética e DNA", v: "7O0H-1tZl-k" },
-      { t: "Corpo Humano (Sistemas)", v: "p4vI_O2-k6M" }
+      { t: "Ecologia (Cadeias e Ciclos)", v: "KKELP-3_Dlk" },
+      { t: "Genética e DNA", v: "YjwYJHqxwFY" },
+      { t: "Corpo Humano (Sistemas)", v: "gz9BSAnNjKE" }
     ],
     "quimica": [
-      { t: "Reações Químicas", v: "Gk7MvT0_m-U" },
-      { t: "pH e Equilíbrio", v: "b0V0V-tI8-o" },
-      { t: "Química Orgânica", v: "8V-w6F_L3nQ" }
+      { t: "Reações Químicas", v: "VrUvy1N66U0" },
+      { t: "pH e pOH", v: "8zIhO1eQDrs" },
+      { t: "Química Orgânica", v: "fY8E1dhNGNc" }
     ],
     "fisica": [
-      { t: "Cinemática (Velocidade Média)", v: "XshFshLREzQ" },
-      { t: "MUV (Aceleração)", v: "FEx0rIcWhGY" },
-      { t: "Energia Mecânica", v: "itfC8uH8M7M" },
-      { t: "Trabalho e Potência", v: "Gk7MvT0_m-U" }
+      { t: "Cinemática (Velocidade Média)", v: "j0gBi-_zorg" },
+      { t: "MUV (Aceleração)", v: "yJL7tU1ljpg" },
+      { t: "Trabalho, Potência e Energia", v: "Ml_NyaV6oNk" }
     ]
   };
 

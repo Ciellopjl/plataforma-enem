@@ -169,3 +169,98 @@ export async function toggleMyRole() {
   revalidatePath("/admin");
   revalidatePath("/dashboard");
 }
+
+/**
+ * MODO EXTERMÍNIO: Apagar todos os alunos e seus dados progressivos
+ * EXCLUSIVO: Apenas o Gmail do Desenvolvedor pode disparar estra ação.
+ */
+export async function wipeAllStudents() {
+  const session = await auth();
+  const email = session?.user?.email;
+
+  if (email !== SUPER_ADMIN_EMAIL) {
+    throw new Error("Ação Proibida: Somente o Desenvolvedor Original (Gmail) pode resetar os alunos.");
+  }
+
+  // SÊNIOR: Como o schema tem onDelete: Cascade nas relações User -> [Essay, Note, Progress, DailyChallenge, QuizAttempt]
+  // Podemos apagar os Users com role STUDENT que o resto será limpo automaticamente.
+  
+  const deletedCount = await prisma.user.deleteMany({
+    where: {
+      role: "STUDENT"
+    }
+  });
+
+  await createLog("DATABASE_WIPE", `Limpou todos os ${deletedCount.count} alunos da plataforma.`);
+  
+  revalidatePath("/admin");
+  revalidatePath("/ranking");
+  
+  return { 
+    success: true, 
+    message: `${deletedCount.count} alunos e todos os seus registros foram removidos com sucesso.` 
+  };
+}
+
+/**
+ * EXCLUSÃO INDIVIDUAL: Apagar um usuário específico e seus dados (Cascade).
+ * EXCLUSIVO: Apenas o Administrador Supremo (Gmail Original) pode deletar.
+ */
+export async function deleteUser(userId: string) {
+  const session = await auth();
+  const email = session?.user?.email;
+
+  if (email !== SUPER_ADMIN_EMAIL) {
+    throw new Error("Ação Proibida: Somente o Desenvolvedor Original pode excluir usuários individualmente.");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, name: true }
+  }) as any;
+
+  if (!user) throw new Error("Usuário não encontrado.");
+
+  if (user.email === SUPER_ADMIN_EMAIL) {
+    throw new Error("Você não pode excluir o Super Admin Supremo.");
+  }
+
+  await prisma.user.delete({
+    where: { id: userId }
+  });
+
+  await createLog("USER_DELETE", `Excluiu permanentemente o usuário ${user.name} (${user.email}).`);
+
+  revalidatePath("/admin");
+  
+  return { 
+    success: true, 
+    message: `Usuário ${user.name || "Sem Nome"} removido com sucesso.` 
+  };
+}
+
+/**
+ * BUSCAR MENSAGENS DO TUTOR: Ver o que os alunos andam perguntando.
+ * EXCLUSIVO: Apenas o Gmail do Desenvolvedor (God Mode).
+ */
+export async function getTutorMessages() {
+  const session = await auth();
+  const email = session?.user?.email;
+
+  if (email !== SUPER_ADMIN_EMAIL) {
+    throw new Error("Ação Proibida: Somente o Desenvolvedor Original (Gmail) pode ver as mensagens do tutor.");
+  }
+
+  return await (prisma as any).tutorMessage.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true,
+          image: true
+        }
+      }
+    }
+  });
+}

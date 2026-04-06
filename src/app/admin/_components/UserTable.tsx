@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Users, Shield, Ban, Loader2, ShieldCheck, Crown, UserRound } from "lucide-react";
+import { Search, Users, Shield, Ban, Loader2, ShieldCheck, Crown, UserRound, Trash2 } from "lucide-react";
 import { cn, formatName } from "@/lib/utils";
 import { AdminUser } from "../types";
 import Image from "next/image";
@@ -15,6 +15,8 @@ interface UserTableProps {
   actionLoading: string | null;
   isOnline: (lastSeen: any) => boolean;
   SUPER_ADMIN_EMAIL: string;
+  onDeleteUser: (id: string, name: string) => Promise<void>;
+  currentUserEmail: string | null | undefined;
 }
 
 export function UserTable({
@@ -27,6 +29,8 @@ export function UserTable({
   actionLoading,
   isOnline,
   SUPER_ADMIN_EMAIL,
+  onDeleteUser,
+  currentUserEmail,
 }: UserTableProps) {
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -84,9 +88,11 @@ export function UserTable({
                       user={user}
                       onToggleBlock={onToggleBlock}
                       onToggleRole={onToggleRole}
+                      onDeleteUser={onDeleteUser}
                       actionLoading={actionLoading}
                       isOnline={isOnline}
                       SUPER_ADMIN_EMAIL={SUPER_ADMIN_EMAIL}
+                      currentUserEmail={currentUserEmail}
                       variant="admin"
                     />
                   ))
@@ -143,9 +149,11 @@ export function UserTable({
                       user={user}
                       onToggleBlock={onToggleBlock}
                       onToggleRole={onToggleRole}
+                      onDeleteUser={onDeleteUser}
                       actionLoading={actionLoading}
                       isOnline={isOnline}
                       SUPER_ADMIN_EMAIL={SUPER_ADMIN_EMAIL}
+                      currentUserEmail={currentUserEmail}
                       variant="student"
                     />
                   ))
@@ -164,17 +172,21 @@ function UserRow({
   user,
   onToggleBlock,
   onToggleRole,
+  onDeleteUser,
   actionLoading,
   isOnline,
   SUPER_ADMIN_EMAIL,
+  currentUserEmail,
   variant,
 }: {
   user: AdminUser;
   onToggleBlock: any;
   onToggleRole: any;
+  onDeleteUser: (id: string, name: string) => Promise<void>;
   actionLoading: string | null;
   isOnline: any;
   SUPER_ADMIN_EMAIL: string;
+  currentUserEmail: string | null | undefined;
   variant: "admin" | "student";
 }) {
   const online = isOnline(user.lastSeen);
@@ -282,6 +294,18 @@ function UserRow({
               >
                 {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Ban size={14} />}
               </button>
+
+              {/* Botão de Exclusão (Exclusivo para o Gmail Supremo) */}
+              {currentUserEmail === SUPER_ADMIN_EMAIL && (
+                <button
+                  disabled={isLoading}
+                  onClick={() => onDeleteUser(user.id, user.name || "Sem Nome")}
+                  title="Excluir Usuário Permanentemente"
+                  className="p-2.5 rounded-xl border border-transparent bg-red-500/10 text-red-500 hover:bg-red-600 hover:text-white transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isLoading ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                </button>
+              )}
             </>
           ) : (
             <div className="text-[10px] font-black text-primary-500/40 uppercase tracking-widest px-4 italic animate-pulse">

@@ -25,7 +25,6 @@ async function purgeAllExceptMe() {
     prisma.progress.deleteMany({ where: { userId: { not: master.id } } }),
     prisma.quizAttempt.deleteMany({ where: { userId: { not: master.id } } }),
     prisma.essay.deleteMany({ where: { userId: { not: master.id } } }),
-    prisma.dailyChallengeParticipant.deleteMany({ where: { userId: { not: master.id } } }),
     prisma.userBadge.deleteMany({ where: { userId: { not: master.id } } }),
     prisma.activityLog.deleteMany({ where: { userId: { not: master.id } } }),
     prisma.account.deleteMany({ where: { userId: { not: master.id } } }),

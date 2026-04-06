@@ -1,9 +1,10 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
-  Trophy, BookOpen, LayoutDashboard, User, Users, Star, Award, BarChart3, Moon, PenTool, Calendar, LogOut
+  Trophy, BookOpen, LayoutDashboard, User, Users, Star, Award, BarChart3, Moon, PenTool, Calendar, LogOut, Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
@@ -18,6 +19,7 @@ const navItems = [
   { name: "Redação", href: "/redacao", icon: PenTool },
   { name: "Simulados", href: "/simulados", icon: Trophy },
   { name: "Biblioteca", icon: BookOpen, href: "/biblioteca" },
+  { name: "Anotações", href: "/anotacoes", icon: Clock },
   { name: "Ranking", href: "/ranking", icon: Star },
   { name: "Conquistas", href: "/conquistas", icon: Award },
 ];
@@ -25,6 +27,13 @@ const navItems = [
 export function Navbar() {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const desktopScrollRef = React.useRef<HTMLDivElement>(null);
+
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (desktopScrollRef.current) {
+      desktopScrollRef.current.scrollLeft += e.deltaY;
+    }
+  };
 
   // Esconder Navbar na página de login e durante simulados (Modo Foco)
   if (pathname === "/login" || pathname.startsWith("/simulados/desafio/")) return null;
@@ -53,7 +62,11 @@ export function Navbar() {
               </div>
             </Link>
 
-            <div className="flex items-center gap-1 mx-2 overflow-hidden">
+            <div 
+              ref={desktopScrollRef}
+              onWheel={handleWheel}
+              className="flex flex-1 items-center gap-1 mx-2 overflow-x-auto no-scrollbar px-2 shrink"
+            >
               {navItems.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                 return (
@@ -61,17 +74,14 @@ export function Navbar() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "relative px-2.5 xl:px-4 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 text-sm font-bold shrink-0",
+                      "relative px-3 py-2 rounded-xl transition-all duration-300 flex items-center gap-2 text-sm font-bold shrink-0",
                       isActive 
                         ? "text-primary-400 bg-primary-500/10 border border-primary-500/20 shadow-[0_0_15px_rgba(139,92,246,0.1)]" 
                         : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.02]"
                     )}
                   >
-                    <item.icon size={18} className={cn("transition-transform duration-300", isActive && "scale-110")} />
-                    <span className={cn(
-                      "transition-all duration-300 overflow-hidden whitespace-nowrap",
-                      isActive ? "w-auto opacity-100 ml-0" : "w-0 xl:w-auto opacity-0 xl:opacity-100 xl:ml-0 hidden xl:inline-block"
-                    )}>
+                    <item.icon size={18} className={cn("transition-transform duration-300 shrink-0", isActive && "scale-110")} />
+                    <span className="transition-all duration-300 whitespace-nowrap">
                       {item.name}
                     </span>
                   </Link>
@@ -84,7 +94,7 @@ export function Navbar() {
                 <button className="relative w-10 h-10 xl:w-11 xl:h-11 rounded-2xl bg-zinc-900 border border-white/5 text-zinc-400 hover:border-primary-500/30 transition-all group overflow-hidden flex items-center justify-center">
                    {userImage ? (
                       <Image 
-                         src={userImage} 
+                         src={userImage as string} 
                          alt="Perfil" 
                          width={44} 
                          height={44} 
@@ -101,8 +111,8 @@ export function Navbar() {
       </nav>
 
       {/* Mobile Navbar (Bottom Floating Bar) */}
-      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[96%] max-w-md">
-        <div className="glass rounded-[2.5rem] px-4 py-3 flex items-center gap-6 overflow-x-auto no-scrollbar snap-x border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl">
+      <nav className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-full">
+        <div className="glass rounded-[2.5rem] p-3 flex items-center gap-6 overflow-x-auto no-scrollbar snap-x border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl touch-pan-x">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -126,14 +136,32 @@ export function Navbar() {
               </Link>
             );
           })}
-          
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="relative p-3 rounded-2xl text-red-500/70 hover:text-red-500 transition-all flex flex-col items-center gap-1"
+
+          <Link
+            href="/perfil"
+            className={cn(
+               "relative p-3 rounded-2xl transition-all duration-300 flex flex-col items-center gap-1 shrink-0",
+               pathname === "/perfil" ? "text-primary-400 scale-110" : "text-zinc-500"
+            )}
           >
-            <LogOut size={22} />
-            <span className="text-[10px] font-black uppercase tracking-tighter">Sair</span>
-          </button>
+            <div className="relative w-6 h-6 rounded-full overflow-hidden border border-zinc-700/50 flex items-center justify-center bg-zinc-900">
+               {userImage ? (
+                  <Image 
+                     src={userImage as string} 
+                     alt="Perfil" 
+                     width={24} 
+                     height={24} 
+                     className="w-full h-full object-cover"
+                  />
+               ) : (
+                  <User size={14} />
+               )}
+               {pathname === "/perfil" && (
+                   <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-primary-500 rounded-full shadow-[0_0_10px_#8b5cf6]" />
+               )}
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-tighter">Perfil</span>
+          </Link>
         </div>
       </nav>
     </>

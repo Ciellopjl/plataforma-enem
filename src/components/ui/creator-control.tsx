@@ -1,34 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Zap, ShieldAlert, Plus, Minus, Trophy, CheckCircle2, Loader2, Sparkles } from "lucide-react";
-import { setAccountTo100Percent, adjustUserPoints, repairQuizzes } from "@/app/dashboard/admin-actions";
+import { Zap, ShieldAlert, Plus, Minus, Loader2 } from "lucide-react";
+import { adjustUserPoints } from "@/app/dashboard/admin-actions";
 import { cn } from "@/lib/utils";
 
 export function CreatorControl() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [xpAmount, setXpAmount] = useState(100);
 
-  const handleRepair = async () => {
-    setLoading(true);
-    const res = await repairQuizzes();
-    setLoading(false);
-    if (res.success) {
-      setMessage(res.message || "");
-      setTimeout(() => setMessage(""), 3000);
-    }
-  };
 
-  const handle100Percent = async () => {
-    if (!confirm("Isso marcará TODAS as lições e quizzes como concluídos. Confirmar?")) return;
-    setLoading(true);
-    const res = await setAccountTo100Percent();
-    setLoading(false);
-    if (res.success) {
-      setMessage(res.message || "");
-      setTimeout(() => window.location.reload(), 2000);
-    }
-  };
 
   const handlePoints = async (amount: number) => {
     setLoading(true);
@@ -56,18 +38,26 @@ export function CreatorControl() {
 
         {/* Controles Agrupados e Densos */}
         <div className="flex flex-wrap items-center gap-4">
-           {/* XP Control */}
+           {/* XP Control Personalizado */}
            <div className="flex items-center bg-zinc-950/40 border border-white/5 rounded-xl h-10 overflow-hidden">
               <button 
-                onClick={() => handlePoints(-100)}
+                onClick={() => handlePoints(-xpAmount)}
                 disabled={loading}
                 className="px-3 h-full hover:bg-white/5 text-zinc-500 transition-colors border-r border-white/5"
               >
                 <Minus size={12} />
               </button>
-              <div className="px-3 text-[9px] font-black uppercase tracking-tighter text-zinc-400">100 XP</div>
+              <div className="flex items-center h-full">
+                <input 
+                  type="number" 
+                  value={xpAmount}
+                  onChange={(e) => setXpAmount(Number(e.target.value))}
+                  className="w-14 bg-transparent border-none text-center text-[10px] font-black text-zinc-100 focus:ring-0 p-0 selection:bg-amber-500/30"
+                />
+                <span className="text-[8px] font-black uppercase text-zinc-500 pr-3 select-none">XP</span>
+              </div>
               <button 
-                onClick={() => handlePoints(100)}
+                onClick={() => handlePoints(xpAmount)}
                 disabled={loading}
                 className="px-3 h-full hover:bg-white/5 text-amber-500 transition-colors border-l border-white/5"
               >
@@ -77,25 +67,7 @@ export function CreatorControl() {
 
            <div className="h-4 w-px bg-white/5 hidden lg:block" />
 
-           {/* Finish Progrss */}
-           <button
-             onClick={handle100Percent}
-             disabled={loading}
-             className="h-10 px-5 bg-white/5 border border-white/5 text-zinc-400 font-black text-[9px] uppercase tracking-widest rounded-xl hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 group/btn"
-           >
-             {loading ? <Loader2 className="animate-spin" size={12} /> : <CheckCircle2 className="group-hover/btn:text-emerald-400 transition-colors" size={12} />}
-             Restaurar 100%
-           </button>
 
-           {/* Final Exam */}
-           <button
-             onClick={handleRepair}
-             disabled={loading}
-             className="h-10 px-5 bg-white text-black font-black text-[9px] uppercase tracking-widest rounded-xl hover:bg-zinc-200 transition-all flex items-center gap-2"
-           >
-             {loading ? <Loader2 className="animate-spin" size={12} /> : <Trophy size={12} />}
-             Prova Final
-           </button>
         </div>
 
         {message && (

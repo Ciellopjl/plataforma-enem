@@ -33,6 +33,7 @@ model User {
   quizAttempts      QuizAttempt[]
   sessions          Session[]
   badges            UserBadge[]
+  tutorMessages     TutorMessage[]
 }
 
 model ActivityLog {
@@ -53,7 +54,7 @@ model DailyChallenge {
   score     Int?
   responses Json?
   quiz      Quiz     @relation(fields: [quizId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
 }
@@ -159,7 +160,7 @@ model QuizAttempt {
   completed Boolean  @default(false)
   createdAt DateTime @default(now())
   quiz      Quiz     @relation(fields: [quizId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, quizId])
 }
@@ -184,7 +185,7 @@ model Progress {
   updatedAt DateTime @updatedAt
   content   Content? @relation(fields: [contentId], references: [id])
   lesson    Lesson?  @relation(fields: [lessonId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, contentId])
   @@unique([userId, lessonId])
@@ -254,6 +255,15 @@ model Announcement {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   expiresAt DateTime?
+}
+
+model TutorMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  role      String   // "user" ou "assistant"
+  content   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum UserRole {

@@ -108,14 +108,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
-    async signIn({ user, account }) {
+    async signIn({ user }) {
       if ((user as any).isBlocked) {
         return false;
       }
 
-      // Sênior: Agora permitimos a entrada via Google para todos, pois
-      // o cadastro manual foi removido. Novos e-mails serão detectados pelo 
-      // Middleware e obrigados a 'Finalizar Cadastro' (IA + Senha).
       return true;
     },
   },

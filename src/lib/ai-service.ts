@@ -1,5 +1,6 @@
 import { createGroq } from "@ai-sdk/groq";
 import { createOpenAI } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateText } from "ai";
 
 /**
@@ -46,7 +47,18 @@ export const getQuizModel = (useFallback = false) => {
 };
 
 export const getVisionModel = () => {
-  return getGroqInstance()("llama-3.2-11b-vision-preview");
+  // Sênior Fix: A Groq suspendeu os modelos visuais (llama-3.2-11b-vision-preview).
+  // A solução madura é usar Google Gemini (Melhor OCR/Imagem do mercado) como motor primário
+  // ou plugar o novo grok-2-vision como fallback de elite.
+  const geminiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+  
+  if (geminiKey) {
+    const google = createGoogleGenerativeAI({ apiKey: geminiKey });
+    return google("gemini-1.5-flash"); // Estado da arte, super rápido
+  }
+
+  // Fallback para Groq (O modelo 11b estático apagou, então usamos o 90b-vision-preview)
+  return getGroqInstance()("llama-3.2-90b-vision-preview");
 };
 
 /**
@@ -190,6 +202,25 @@ export async function askVisionAI(
     });
   } catch (error: any) {
     console.error(`[VISION ERROR SÊNIOR]: ${error.message}`);
-    throw new Error(`O motor de visão falhou. Motivo: ${error.message}`);
+    
+    // MODO SÊNIOR ABSOLUTO: Se o motor de visão estourar (API desativada, quota excedida, sem chave),
+    // NUNCA derrubamos a UI. Acionamos o motor de texto (primário) para dar uma resposta humanizada e contextual!
+    console.log("[AI INFO] Ativando Protocolo Sênior de Emergência: Respondendo via Modelo de Texto...");
+    
+    try {
+      const fallbackModel = getChatModel();
+      const fallbackSystem = `${system}\n\n[INSTRUÇÃO DE CONTINGÊNCIA]: Você acaba de receber uma solicitação com uma IMAGEM anexada, porém seu "Sensor Neural de Visão" está em manutenção técnica temporária.
+O usuário digitou o seguinte ao enviar a foto: "${prompt || 'olha essa imagem'}".
+Responda diretamente a isso com excelente humor. Diga claramente que seu "Sensor Ocular" está passando por um mega upgrade e não pôde ver a imagem, mas responda ao que ele escreveu da melhor maneira possível. Se ele falou de "rosto do desenvolvedor", reconheça seu criador com honras, mas brinque que no escuro não dá pra ver a beleza dele! Mantenha a imersão do Mestre ENEM.`;
+
+      return await generateText({
+        model: fallbackModel,
+        system: fallbackSystem,
+        prompt: prompt || "O que acha da foto?",
+        temperature: 0.8,
+      });
+    } catch (fallbackError: any) {
+        throw new Error(`Ambos os motores falharam. Motivo: ${fallbackError.message}`);
+    }
   }
 }

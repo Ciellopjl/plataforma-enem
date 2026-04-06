@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { askAI, askVisionAI } from "@/lib/ai-service";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
     let systemInstruction = `Você é o "Mestre ENEM", um tutor virtual focado em ajudar estudantes a passarem no ENEM 2026.
 Você deve ter uma linguagem super didática, jovem (mas não forçada) e usar emojis com moderação.
 Sempre que o aluno perguntar algo, explique de forma clara e objetiva como aquilo pode cair no ENEM, e quais pegadinhas da banca ele deve evitar.
-Formate sua resposta usando parágrafos curtos.
+EXTREMA IMPORTÂNCIA: SEJA MUITO CONCISO E DIRETO. O aluno tem "preguiça de ler" blocos imensos de texto. Responda do jeito mais curto possível (limite-se a 2 ou 3 frases ágeis por mensagem), e só aprofunde se ele pedir.
 NÃO use markdown complicado, responda em texto simples ou com marcadores simples como - e * pois o chat no momento não possui renderizador de markdown completo.
 
 CONTEXTO ATUAL DO ALUNO: O aluno está na página "${context || 'Dashboard'}". 
@@ -57,6 +58,26 @@ Mantenha a persona do Mestre ENEM, mas com um tom de parceria exclusiva e reconh
           systemInstruction, 
           isRedacaoAudit ? "redacao" : "chat"
         );
+      }
+
+      if (session?.user?.id) {
+        // Salvar a mensagem que o usuário enviou (a última do array)
+        await (prisma as any).tutorMessage.create({
+          data: {
+            userId: session.user.id,
+            role: "user",
+            content: lastMessage || "Analise esta imagem.",
+          }
+        });
+        
+        // Salvar a resposta do tutor/IA
+        await (prisma as any).tutorMessage.create({
+          data: {
+            userId: session.user.id,
+            role: "assistant",
+            content: result.text,
+          }
+        });
       }
 
       return NextResponse.json({ text: result.text });

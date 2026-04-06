@@ -47,7 +47,7 @@ export function LogList({ logs, loading }: LogListProps) {
                     </span>
                   </div>
                   <span className="text-[10px] text-zinc-600 font-bold flex items-center gap-1.5 whitespace-nowrap bg-black/40 px-3 py-1 rounded-full border border-white/5">
-                     <Clock size={10} /> {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                     <Clock size={10} /> {new Date(log.createdAt).toLocaleString("pt-BR", { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </span>
                </div>
 

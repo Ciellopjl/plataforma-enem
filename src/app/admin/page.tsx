@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { getUsers, getLogs, toggleUserBlock, toggleUserRole } from "./actions";
-import { ArrowLeft, Globe, Loader2, Users, Activity, Shield, LayoutDashboard, FileText, Bell, LayoutGrid } from "lucide-react";
+import { getUsers, getLogs, toggleUserBlock, toggleUserRole, deleteUser } from "./actions";
+import { useSession } from "next-auth/react";
+import { WipeStudentsButton } from "./_components/WipeStudentsButton";
+import { ArrowLeft, Globe, Loader2, Users, Activity, Shield, LayoutDashboard, FileText, Bell, LayoutGrid, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { AdminUser, ActivityLog, AdminStats } from "./types";
@@ -13,12 +15,14 @@ import { AnalyticsTab } from "./_components/AnalyticsTab";
 import { AnnouncementManager } from "./_components/AnnouncementManager";
 import { EssayQueue } from "./_components/EssayQueue";
 import { ContentManager } from "./_components/ContentManager";
+import { TutorMessagesTab } from "./_components/TutorMessagesTab";
 
 const SUPER_ADMIN_EMAIL = "ciellolisboa023@gmail.com";
 
-type AdminTab = "dashboard" | "users" | "content" | "essays" | "announcements" | "logs";
+type AdminTab = "dashboard" | "users" | "content" | "essays" | "announcements" | "logs" | "mensagens";
 
 export default function AdminPage() {
+  const { data: session } = useSession();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +73,23 @@ export default function AdminPage() {
     try {
       await toggleUserRole(userId);
       await loadData();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, name: string) => {
+    if (!window.confirm(`TEM CERTEZA? Você está prestes a excluir permanentemente o aluno ${name}. Esta ação não pode ser desfeita.`)) return;
+    
+    setActionLoading(userId);
+    try {
+      const result = await deleteUser(userId);
+      if (result.success) {
+        alert(result.message);
+        await loadData();
+      }
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -134,7 +155,8 @@ export default function AdminPage() {
              { id: "content", label: "Conteúdo", icon: LayoutGrid },
              { id: "essays", label: "Redações", icon: FileText },
              { id: "announcements", label: "Avisos", icon: Bell },
-             { id: "logs", label: "Auditoria", icon: Shield }
+             { id: "logs", label: "Auditoria", icon: Shield },
+             ...(session?.user?.email === SUPER_ADMIN_EMAIL ? [{ id: "mensagens", label: "Mensagens", icon: MessageSquare }] : [])
            ].map(t => (
              <button 
                key={t.id}
@@ -161,22 +183,31 @@ export default function AdminPage() {
             <>
               {tab === "dashboard" && <AnalyticsTab />}
               {tab === "users" && (
-                <UserTable
-                  admins={filteredAdmins}
-                  students={filteredStudents}
-                  search={search}
-                  onSearchChange={setSearch}
-                  onToggleBlock={handleToggleBlock}
-                  onToggleRole={handleToggleRole}
-                  actionLoading={actionLoading}
-                  isOnline={isOnline}
-                  SUPER_ADMIN_EMAIL={SUPER_ADMIN_EMAIL}
-                />
+                <>
+                  <UserTable
+                    admins={filteredAdmins}
+                    students={filteredStudents}
+                    search={search}
+                    onSearchChange={setSearch}
+                    onToggleBlock={handleToggleBlock}
+                    onToggleRole={handleToggleRole}
+                    onDeleteUser={handleDeleteUser}
+                    actionLoading={actionLoading}
+                    isOnline={isOnline}
+                    SUPER_ADMIN_EMAIL={SUPER_ADMIN_EMAIL}
+                    currentUserEmail={session?.user?.email}
+                  />
+                  <WipeStudentsButton 
+                    userEmail={session?.user?.email} 
+                    devEmail={SUPER_ADMIN_EMAIL} 
+                  />
+                </>
               )}
               {tab === "content" && <ContentManager />}
               {tab === "essays" && <EssayQueue />}
               {tab === "announcements" && <AnnouncementManager />}
               {tab === "logs" && <LogList logs={logs} loading={loading} />}
+              {tab === "mensagens" && session?.user?.email === SUPER_ADMIN_EMAIL && <TutorMessagesTab />}
             </>
           )}
         </div>
