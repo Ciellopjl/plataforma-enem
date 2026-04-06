@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { Trophy, Star, Medal } from "lucide-react";
 import { cn, formatName } from "@/lib/utils";
 import { auth } from "@/lib/auth";

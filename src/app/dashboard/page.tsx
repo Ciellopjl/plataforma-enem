@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { ProgressBar, Button } from "@/components/ui/base-ui";
 import { SubjectCard } from "@/components/ui/subject-card";
 import { Trophy, Flame, Target, BookOpen, Clock, GraduationCap, Star, Users, Shield, ShieldCheck } from "lucide-react";

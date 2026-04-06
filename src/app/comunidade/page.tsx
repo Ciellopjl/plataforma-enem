@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { Send, Users, Star, MessageSquare, Zap, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/base-ui";
 import prisma from "@/lib/prisma";

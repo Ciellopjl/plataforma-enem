@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { Button } from "@/components/ui/base-ui";
 import { User, LogOut, Flame, Trophy, Mail } from "lucide-react";
 import Image from "next/image";

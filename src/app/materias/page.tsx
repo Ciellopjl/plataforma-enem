@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { SubjectCard } from "@/components/ui/subject-card";
 import { BookOpen, Search, Filter } from "lucide-react";
 import prisma from "@/lib/prisma";
