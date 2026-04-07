@@ -161,8 +161,7 @@ model QuizAttempt {
   createdAt DateTime @default(now())
   quiz      Quiz     @relation(fields: [quizId], references: [id])
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, quizId])
+  // Removido unique para permitir retentativas de quizzes/simulados
 }
 
 model Content {

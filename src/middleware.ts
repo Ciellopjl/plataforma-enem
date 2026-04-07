@@ -10,6 +10,7 @@ import { neon } from "@neondatabase/serverless";
  * O `auth.ts` completo (com PrismaAdapter) só é usado em API Routes.
  */
 const { auth } = NextAuth(authConfig);
+const sql = neon(process.env.DATABASE_URL!);
 
 export default auth(async (req) => {
   const { nextUrl } = req;
@@ -40,7 +41,6 @@ export default auth(async (req) => {
     const userId = (req.auth as any)?.user?.id;
     if (userId) {
       try {
-        const sql = neon(process.env.DATABASE_URL!);
         const users = await sql`SELECT "isBlocked", "id" FROM "User" WHERE id = ${userId}`;
         const dbUser = users[0];
         

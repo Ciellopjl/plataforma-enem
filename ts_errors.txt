@@ -1,1 +1,0 @@
-src/app/materias/content-list.tsx(6,10): error TS2724: '"./actions"' has no exported member named 'toggleContentProgress'. Did you mean 'toggleProgress'?

@@ -45,13 +45,22 @@ export async function setAccountTo100Percent() {
         include: { questions: true } 
     });
     
-    await Promise.all(quizzes.map(quiz => 
-        prisma.quizAttempt.upsert({
-            where: { userId_quizId: { userId, quizId: quiz.id } },
-            update: { score: quiz.questions.length, completed: true },
-            create: { userId, quizId: quiz.id, score: quiz.questions.length, completed: true }
-        })
-    ));
+    await Promise.all(quizzes.map(async (quiz) => {
+        const existing = await prisma.quizAttempt.findFirst({
+            where: { userId, quizId: quiz.id }
+        });
+        
+        if (existing) {
+            return prisma.quizAttempt.update({
+                where: { id: existing.id },
+                data: { score: quiz.questions.length, completed: true }
+            });
+        } else {
+            return prisma.quizAttempt.create({
+                data: { userId, quizId: quiz.id, score: quiz.questions.length, completed: true }
+            });
+        }
+    }));
 
     revalidatePath("/dashboard");
     revalidatePath("/materias");
