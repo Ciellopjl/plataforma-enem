@@ -4,12 +4,13 @@ import { ChevronLeft, Play, Award, Zap, Lock, CheckCircle2, Flame, GraduationCap
 import { ProgressBar } from "@/components/ui/base-ui";
 import { cn } from "@/lib/utils";
 import { SubjectIcon } from "@/components/ui/subject-icon";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { LessonViewer } from "../lesson-viewer";
 import { QuizViewer } from "../quiz-viewer";
 
-export default function SubjectDetailPage({ params }: { params: { slug: string } }) {
+export default function SubjectDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const [subject, setSubject] = useState<any>(null);
   const [view, setView] = useState<"trail" | "lesson" | "quiz">("trail");
   const [activeItem, setActiveItem] = useState<any>(null);
@@ -20,13 +21,13 @@ export default function SubjectDetailPage({ params }: { params: { slug: string }
 
   useEffect(() => {
     async function fetchData() {
-      const res = await fetch(`/api/subjects/${params.slug}`);
+      const res = await fetch(`/api/subjects/${slug}`);
       const data = await res.json();
       setSubject(data);
       setTimeout(() => setLoading(false), 500);
     }
     fetchData();
-  }, [params.slug]);
+  }, [slug]);
 
   if (loading || !subject) {
     return (

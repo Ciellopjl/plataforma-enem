@@ -7,8 +7,9 @@ export const revalidate = 0;
 
 export async function GET(
   req: Request,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
+  const { slug } = await params;
   const session = await auth();
   if (!session?.user) {
     return new NextResponse("Unauthorized", { status: 401 });
@@ -18,7 +19,7 @@ export async function GET(
 
   try {
     const subject = await prisma.subject.findUnique({
-      where: { slug: params.slug },
+      where: { slug: slug },
       include: {
         lessons: {
           orderBy: { order: "asc" },
