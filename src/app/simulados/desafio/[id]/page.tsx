@@ -4,7 +4,8 @@ import prisma from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import { QuizInteractive } from "./quiz-interactive";
 
-export default async function DesafioDiarioPage({ params }: { params: { id: string } }) {
+export default async function DesafioDiarioPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await auth();
 
   if (!session?.user) {
@@ -16,7 +17,7 @@ export default async function DesafioDiarioPage({ params }: { params: { id: stri
   // Busca o desafio e todas as perguntas e opções
   const challenge = await prisma.dailyChallenge.findUnique({
     where: { 
-      id: params.id,
+      id: id,
       userId: userId, // Garante que só o dono acesse
     },
     include: {
