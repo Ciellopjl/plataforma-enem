@@ -7,6 +7,7 @@ import prisma from "@/lib/prisma";
 import Image from "next/image";
 import Link from "next/link";
 import { LiveRefresh } from "@/components/ui/live-refresh";
+import { Countdown } from "@/components/ui/countdown";
 
 export default async function RankingPage() {
   const session = await auth();
@@ -16,6 +17,46 @@ export default async function RankingPage() {
   }
 
   const currentUserId = (session.user as any).id;
+
+  // --- LÓGICA DE CICLO DE RANKING (3 SEMANAS) ---
+  // Sênior: Implementação de "Lazy Evaluation" para Reset de Temporada
+  let activeCycle = await prisma.rankingCycle.findFirst({
+    where: { active: true },
+    orderBy: { startDate: "desc" }
+  });
+
+  const now = new Date();
+
+  // Se não existe ciclo ou o atual expirou, resetamos o ranking!
+  if (!activeCycle || now > activeCycle.endDate) {
+    console.log("🔄 [RANKING] Ciclo inspirado ou inexistente. Iniciando Reset de Temporada...");
+    
+    // 1. Desativar ciclos antigos
+    await prisma.rankingCycle.updateMany({
+      where: { active: true },
+      data: { active: false }
+    });
+
+    // 2. Zerar pontos de TODOS os usuários (Mantendo totalPoints para histórico)
+    await prisma.user.updateMany({
+      data: { points: 0 }
+    });
+
+    // 3. Criar Novo Ciclo (3 Semanas = 21 dias)
+    const newEndDate = new Date();
+    newEndDate.setDate(newEndDate.getDate() + 21);
+
+    activeCycle = await prisma.rankingCycle.create({
+      data: {
+        name: `Temporada ${new Date().toLocaleDateString('pt-BR')}`,
+        startDate: new Date(),
+        endDate: newEndDate,
+        active: true
+      }
+    });
+
+    console.log(`✅ [RANKING] Novo ciclo de 3 semanas criado. Expira em: ${newEndDate.toLocaleString()}`);
+  }
 
   // Buscar os top 10 usuários reais do banco de dados (Sênior: Integração de Dados Reais)
   const topUsers = await prisma.user.findMany({
@@ -50,8 +91,9 @@ export default async function RankingPage() {
     <div className="space-y-12 pb-20 animate-in fade-in slide-in-from-bottom-8 duration-1000">
       <LiveRefresh intervalMs={5000} />
       <header className="text-center space-y-4 max-w-2xl mx-auto">
-        <div className="flex items-center justify-center gap-2 text-primary-400 text-xs font-black uppercase tracking-[0.3em] mb-2">
-            <Trophy size={14} /> Ciclo Mensal Ativo
+        <div className="flex flex-col items-center justify-center gap-4 text-primary-400 text-xs font-black uppercase tracking-[0.3em] mb-2">
+            <div className="flex items-center gap-2"><Trophy size={14} /> Ciclo de 3 Semanas Ativo</div>
+            {activeCycle && <Countdown targetDate={activeCycle.endDate.toISOString()} />}
         </div>
         <h1 className="text-4xl md:text-6xl font-black text-white tracking-tighter leading-none">
           Elite do <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500">Ranking</span>

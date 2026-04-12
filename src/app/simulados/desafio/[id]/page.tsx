@@ -55,7 +55,7 @@ export default async function DesafioDiarioPage({ params }: { params: Promise<{ 
       
       <div className="max-w-3xl mx-auto space-y-8 relative z-10">
         <header className="space-y-4 text-center">
-          <p className="text-primary-400 text-sm font-bold uppercase tracking-widest">IA Groq Llama 3 sênior</p>
+          <p className="text-primary-400 text-sm font-bold uppercase tracking-widest">Mestre IA: Grok-2 Sênior</p>
           <h1 className="text-3xl md:text-5xl font-black">{challenge.quiz.title}</h1>
           <p className="text-zinc-400">{challenge.quiz.description}</p>
         </header>

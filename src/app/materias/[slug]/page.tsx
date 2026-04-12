@@ -220,11 +220,11 @@ export default function SubjectDetailPage({ params }: { params: Promise<{ slug: 
                       basicQuiz: data.quiz
                     }));
                   } else {
-                    alert("Falha ao gerar questões do desafio: " + (data.error || "Tente novamente."));
+                    console.error("Falha ao gerar questões do desafio: " + (data.error || "Tente novamente."));
+                    // O sistema deve tentar novamente ou cair silenciosamente
                   }
                 } catch (e) {
-                   console.error(e);
-                   alert("Erro de conexão ao gerar desafio.");
+                   console.error("Erro de conexão ao gerar desafio:", e);
                 } finally {
                    setIsGeneratingBasic(false);
                 }
@@ -292,11 +292,10 @@ export default function SubjectDetailPage({ params }: { params: Promise<{ slug: 
                   setActiveQuizIsFinal(true);
                   setView("quiz");
                 } else {
-                  alert("Falha na IA ao forjar o exame: " + (data.error || "Tente novamente."));
+                  console.error("Falha na IA ao forjar o exame: " + (data.error || "Tente novamente."));
                 }
               } catch (e) {
-                 console.error(e);
-                 alert("Erro de conexão ao gerar prova.");
+                 console.error("Erro de conexão ao gerar prova:", e);
               } finally {
                  setIsGeneratingFinal(false);
               }

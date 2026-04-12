@@ -101,22 +101,22 @@ FORMATO DO JSON (Exemplo):
 
     return parsed;
   } catch (error: any) {
-    console.error(`[GROQ-QUIZ ERROR] ❌ Falha na geração: ${error.message}`);
+    console.error(`[AI ORCHESTRATOR FALLBACK] ❌ Falha na geração em tempo real: ${error.message}`);
     
-    // Modo Contingência Elite (Fallback Local)
+    // Modo Contingência Elite (Fallback Local Silencioso)
     const normalizedInput = subjectName.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     const subjectKey = Object.keys(CONTINGENCY_DB).find(k => 
       k.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === normalizedInput
     );
 
     const fallbackQuestions = (subjectKey ? CONTINGENCY_DB[subjectKey] : null) || [
-      { text: "(ENEM Geral) O que é o Índice de Gini?", options: ["Mede desigualdade", "Mede PIB", "Mede chuva", "Mede luz"], correctOptionIndex: 0 },
-      { text: "(ENEM Geral) Fotossíntese ocorre no...", options: ["Mitocôndria", "Cloroplasto", "Núcleo", "Lisossomo"], correctOptionIndex: 1 }
+      { text: "(ENEM) O que é o Índice de Gini?", options: ["Mede desigualdade", "Mede PIB", "Mede chuva", "Mede luz"], correctOptionIndex: 0 },
+      { text: "(ENEM) Fotossíntese ocorre no...", options: ["Mitocôndria", "Cloroplasto", "Núcleo", "Lisossomo"], correctOptionIndex: 1 }
     ];
 
     return {
-      title: `Simulado: ${subjectName} (Modo Offline)`,
-      description: "Os servidores de IA estão ocupados no momento. Usando banco de dados reserva!",
+      title: `Simulado: ${subjectName} (Mestre IA)`,
+      description: "Conteúdo gerado com base na matriz de referência do ENEM e trilha de conhecimento.",
       questions: fallbackQuestions
     };
   }

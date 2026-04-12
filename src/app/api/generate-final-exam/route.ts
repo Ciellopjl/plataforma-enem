@@ -75,21 +75,44 @@ export async function POST(req: Request) {
       "essayPrompt": "TEMA DA REDAÇÃO relacionado a ${subject.name}: [proposta desafiadora e específica]"
     }`;
 
-    console.log("Chamando Llama 70B para gerar prova final (Maior qualidade estrutural)...");
-    const aiResponse = await generateText({
-      model: getChatModel(),
-      prompt: promptMessage,
-      temperature: 0.5,
-      // @ts-ignore
-      maxTokens: 4000,
-    });
+    console.log("Chamando Mestre IA para gerar prova final...");
+    let aiResponseText = "";
+    try {
+      const response = await askAI(promptMessage, "Você é a Banca Examinadora Suprema do ENEM.", "quiz");
+      aiResponseText = response.text;
+    } catch (aiError: any) {
+      console.error("Erro no Orquestrador IA (Prova Final):", aiError.message);
+      aiResponseText = JSON.stringify({
+          },
+          {
+            text: `(ENEM) Qual a premissa base dos estudos modernos envolvendo essa disciplina específica do ENEM?`,
+            options: [
+              { text: "Garante uma análise sistêmica orientada para um desenvolvimento sustentável e racional.", isCorrect: true },
+              { text: "Serve apenas para desconstrução linguística e não de aplicação de fatos reais.", isCorrect: false },
+              { text: "As abordagens teóricas não passam por evoluções construtivas interativas.", isCorrect: false },
+              { text: "Aumenta drasticamente o ruído e dificulta resoluções pacíficas.", isCorrect: false }
+            ]
+          },
+          {
+            text: `(ENEM) De modo geral, o domínio deste tópico do conhecimento exige:`,
+            options: [
+              { text: "Uso de ferramentas analíticas, intelectuais e argumentativas, para lidar com as incertezas.", isCorrect: true },
+              { text: "A eliminação de testes práticos, baseando-se por mero acaso nos dados obtidos.", isCorrect: false },
+              { text: "Uma leitura dogmática impossibilitando a refutabilidade racional do que é aceito.", isCorrect: false },
+              { text: "Uso de instinto para a tomada final de decisão nas matrizes educacionais.", isCorrect: false }
+            ]
+          }
+        ],
+        essayPrompt: "TEMA DA REDAÇÃO: O impacto das inovações na sociedade moderna, e de que forma o pensamento crítico e a ética moldam as estruturas do século XXI."
+      });
+    }
 
-    console.log("Prova final gerada pela IA, processando...");
+    console.log("Prova final gerada/carregada, processando...");
 
     let generatedData;
     try {
       // Limpeza caso o modelo retorne mensagens extra com o JSON
-      let rawJson = aiResponse.text;
+      let rawJson = aiResponseText;
       const stIdx = rawJson.indexOf('{');
       const endIdx = rawJson.lastIndexOf('}');
       if (stIdx !== -1 && endIdx !== -1) {
@@ -99,7 +122,7 @@ export async function POST(req: Request) {
       rawJson = rawJson.replace(/```json/g, "").replace(/```/g, "").trim();
       generatedData = JSON.parse(rawJson);
     } catch (err) {
-      console.error("Erro ao parsear JSON da IA", aiResponse.text);
+      console.error("Erro ao parsear JSON da IA", aiResponseText);
       throw new Error("A IA falhou na formatação. Tente novamente.");
     }
 

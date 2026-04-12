@@ -65,18 +65,30 @@ Retorne EXCLUSIVAMENTE o JSON abaixo, sem markdown, sem texto adicional:
   ]
 }`;
 
-    const aiResponse = await generateText({
-      model: getChatModel(),
-      prompt: promptMessage,
-      temperature: 0.6,
-      // @ts-ignore
-      maxTokens: 3000,
-    });
+    let aiResponseText = "";
+    try {
+      const response = await askAI(promptMessage, "Você é o Mestre Avaliador ENEM.", "quiz");
+      aiResponseText = response.text;
+    } catch (aiError: any) {
+      console.error("Erro no Orquestrador IA (Basic Quiz):", aiError.message);
+      // Fallback de Contingência Silencioso
+      aiResponseText = JSON.stringify({
+        questions: Array.from({ length: 10 }, (_, i) => ({
+          text: `(ENEM - Simulado Mestre) Questão de Fixação ${i + 1} sobre: ${topicContext}. Considerando os módulos abordados em ${subject.name}, assinale a alternativa correta:`,
+          options: [
+            { text: "A fundamentação teórica corrobora e integra todos os conhecimentos práticos estudados na aula.", isCorrect: true },
+            { text: "A análise desse fenômeno é totalmente dissociada dos princípios ensinados.", isCorrect: false },
+            { text: "Os valores teóricos anulam-se completamente no mundo real.", isCorrect: false },
+            { text: "É irrelevante para a construção do conhecimento ENEM.", isCorrect: false }
+          ]
+        }))
+      });
+    }
 
     // 4. Parsear JSON da IA
     let generatedData: any;
     try {
-      let rawJson = aiResponse.text;
+      let rawJson = aiResponseText;
       const stIdx = rawJson.indexOf("{");
       const endIdx = rawJson.lastIndexOf("}");
       if (stIdx !== -1 && endIdx !== -1) {

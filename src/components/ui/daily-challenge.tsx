@@ -70,7 +70,7 @@ export function DailyChallengeCard() {
             <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
               <span className="px-3 py-1 bg-primary-500/10 text-primary-400 text-[10px] font-black uppercase tracking-[0.2em] rounded-full flex items-center gap-1.5 border border-primary-500/20">
                 <Sparkles size={12} className="animate-pulse" />
-                IA Groq Llama 3 sênior
+                Mestre IA: Grok-2 Sênior
               </span>
             </div>
             

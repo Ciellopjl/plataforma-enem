@@ -10,7 +10,7 @@ import { generateText } from "ai";
 
 const getGroqInstance = () => {
   const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) throw new Error("GROQ_API_KEY ausente no ambiente");
+  if (!apiKey || apiKey === "SUA_CHAVE_AQUI") return null;
 
   return createGroq({
     apiKey,
@@ -19,10 +19,7 @@ const getGroqInstance = () => {
 
 const getGrokInstance = () => {
   const apiKey = process.env.GROK_API_KEY;
-  // Sênior: Se a chave estiver como placeholder, não tentamos a chamada
-  if (!apiKey || apiKey.includes("Sua_Chave")) {
-    throw new Error("GROK_API_KEY (xAI) não configurada corretamente no .env");
-  }
+  if (!apiKey || apiKey.includes("Sua_Chave") || apiKey === "SUA_CHAVE_AQUI") return null;
 
   return createOpenAI({
     apiKey,
@@ -30,60 +27,48 @@ const getGrokInstance = () => {
   });
 };
 
-export const getChatModel = (useFallback = false, modelType: "standard" | "versatile" = "versatile") => {
-  if (useFallback) {
-    return getGrokInstance()("grok-beta");
-  }
-  
-  return getGroqInstance()(modelType === "versatile" ? "llama-3.3-70b-versatile" : "llama3-70b-8192");
-};
+const getGeminiInstance = () => {
+  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === "SUA_CHAVE_AQUI") return null;
 
-export const getQuizModel = (useFallback = false) => {
-  if (useFallback) {
-    return getGrokInstance()("grok-beta");
-  }
-
-  return getGroqInstance()("llama-3.1-8b-instant");
-};
-
-export const getVisionModel = () => {
-  // Sênior Fix: A Groq suspendeu os modelos visuais (llama-3.2-11b-vision-preview).
-  // A solução madura é usar Google Gemini (Melhor OCR/Imagem do mercado) como motor primário
-  // ou plugar o novo grok-2-vision como fallback de elite.
-  const geminiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
-  
-  if (geminiKey) {
-    const google = createGoogleGenerativeAI({ apiKey: geminiKey });
-    return google("gemini-1.5-flash"); // Estado da arte, super rápido
-  }
-
-  // Fallback para Groq (O modelo 11b estático apagou, então usamos o 90b-vision-preview)
-  return getGroqInstance()("llama-3.2-90b-vision-preview");
+  return createGoogleGenerativeAI({ apiKey });
 };
 
 /**
- * Mestre ENEM - Configuração de Elite: Auditor de Redações (Pós-Sênior)
- * Especializado em Detectar Padrões de IAs e Análise Crítica do Grok.
+ * Mestre ENEM - Orquestrador Universal (High-Availability)
+ * Prioridade: Grok-2 (Elite) -> Groq (Speed) -> Gemini (Stability)
  */
-
-export const REDACAO_AUDITOR_SYSTEM_PROMPT = `Você é o "Coordenador de Banca ENEM Sênior". Sua missão é analisar a macro-estrutura dissertativa-argumentativa.
-
-CRITÉRIOS DE EXCELÊNCIA:
-1. INTRODUÇÃO: Deve conter a contextualização do tema e uma TESE clara (duas causas/problemas).
-2. DESENVOLVIMENTO: Deve apresentar argumentos embasados em repertório sociocultural legitimado e produtivo.
-3. CONCLUSÃO: Deve conter uma PROPOSTA DE INTERVENÇÃO com os 5 elementos (Agente, Ação, Meio/Modo, Efeito e Detalhamento).
-
-DIRETRIZES DE AUDITORIA:
-- Valorize "Marcas de Autoria": opiniões articuladas, repertórios socioculturais originais e projeto de texto estratégico.
-- Não penalize o texto apenas por ser "perfeito demais" em sua estrutura (isso é esperado em Notas 1000).
-- Se o texto demonstra senso crítico e uma proposta de intervenção detalhada, considere-o autenticamente humano.
-- O objetivo é guiar o aluno rumo à excelência, não apenas caçar padrões de robô.`;
-
-export const getRedacaoDetectiveModel = (useFallback = false) => {
-  if (useFallback) {
-    return getGrokInstance()("grok-beta");
+export const getChatModel = (provider: "grok" | "groq" | "gemini" = "grok") => {
+  try {
+    if (provider === "grok") {
+      const grok = getGrokInstance();
+      return grok ? grok("grok-2-latest") : null;
+    }
+    if (provider === "groq") {
+      const groq = getGroqInstance();
+      return groq ? groq("llama-3.3-70b-versatile") : null;
+    }
+    if (provider === "gemini") {
+      const gemini = getGeminiInstance();
+      return gemini ? gemini("gemini-1.5-flash") : null;
+    }
+  } catch (e) {
+    return null;
   }
-  return getGroqInstance()("llama-3.3-70b-versatile");
+  return null;
+};
+
+export const getQuizModel = (provider: "grok" | "groq" = "grok") => {
+  try {
+    if (provider === "grok") {
+      const grok = getGrokInstance();
+      return grok ? grok("grok-2-latest") : null;
+    }
+    const groq = getGroqInstance();
+    return groq ? groq("llama-3.1-8b-instant") : null;
+  } catch (e) {
+    return null;
+  }
 };
 
 export async function askAI(
@@ -94,41 +79,36 @@ export async function askAI(
 ) {
   const activeSystem = system || (type === "redacao" ? REDACAO_AUDITOR_SYSTEM_PROMPT : "");
   
-  const getCallArgs = (model: any) => ({
-    model,
+  const callArgs = {
     system: activeSystem,
     temperature: type === "redacao" ? 0.3 : 0.7,
     maxTokens: 4000,
     ...(messages ? { messages } : { prompt })
-  });
+  };
 
-  // Sênior: Motor Primário (High Speed)
-  try {
-    console.log(`[AI INFO] Invocando Groq (Llama) primário para ${type}...`);
-    const model = type === "chat" ? getChatModel() : type === "redacao" ? getRedacaoDetectiveModel() : getQuizModel();
-    return await generateText(getCallArgs(model) as any);
-  } catch (error: any) {
-    console.error(`[AI ERROR] Falha no Groq Primário:`, error.message);
-    
-    // Fallback 1: Groq com modelo 70B padrão (menos Versátil, mais estável)
+  // Ordem de Explorao Serial (Failover Chain)
+  const providers = ["grok", "groq", "gemini"] as const;
+
+  for (const provider of providers) {
     try {
-      console.log(`[AI INFO] Tentando Fallback 1: Groq Llama3-70b...`);
-      const fallbackModel1 = getChatModel(false, "standard");
-      return await generateText(getCallArgs(fallbackModel1) as any);
-    } catch (f1Error: any) {
-      console.error(`[AI ERROR] Falha no Fallback 1 (Groq Standard):`, f1Error.message);
+      const model = type === "quiz" ? getQuizModel(provider as any) : getChatModel(provider as any);
+      if (!model) continue;
 
-      // Fallback 2: Grok (xAI) - O motor de Elite
-      try {
-        console.log(`[AI INFO] Tentando Fallback 2: Grok (xAI)...`);
-        const fallbackModel2 = type === "chat" ? getChatModel(true) : type === "redacao" ? getRedacaoDetectiveModel(true) : getQuizModel(true);
-        return await generateText(getCallArgs(fallbackModel2) as any);
-      } catch (f2Error: any) {
-        console.error(`[AI FATAL ERROR] Todos os modelos falharam.`);
-        throw new Error(`Serviços de IA saturados. Erro: ${f2Error.message}`);
-      }
+      console.log(`[AI ORCHESTRATOR] Tentando ${provider} para ${type}...`);
+      const response = await generateText({
+        model: model as any,
+        ...callArgs
+      });
+      console.log(`[AI SUCCESS] Respondido por ${provider}`);
+      return response;
+    } catch (error: any) {
+      console.error(`[AI FAIL] Provider ${provider} falhou: ${error.message}`);
+      // Continua para o prximo provedor
     }
   }
+
+  // Se todos os provedores falharem, lanamos o erro para os fallbacks offline nas rotas
+  throw new Error("Todos os motores de IA esto indisponveis ou com chaves invlidas.");
 }
 
 /**
