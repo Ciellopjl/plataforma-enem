@@ -23,9 +23,11 @@ Retorne APENAS um JSON válido.
   const prompt = `Gere flashcards sobre: ${subject}.`;
 
   try {
-    const model = getQuizModel(); // Usando Groq Llama 3 8B para velocidade
+    const model = getQuizModel();
+    if (!model) throw new Error("Motor de IA Mestre indisponível.");
+    
     const { text: responseText } = await generateText({
-      model,
+      model: model as any,
       system: systemPrompt,
       prompt: prompt,
       temperature: 0.7,

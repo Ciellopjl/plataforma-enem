@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { getChatModel } from "@/lib/ai-service";
+import { askAI, getChatModel } from "@/lib/ai-service";
 import { generateText } from "ai";
 
 const AREA_SUBJECTS: Record<string, string[]> = {

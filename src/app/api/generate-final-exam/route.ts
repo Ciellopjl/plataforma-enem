@@ -2,8 +2,8 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { getChatModel } from "@/lib/ai-service";
-import { generateText } from "ai";
+import { askAI, getQuizModel } from "@/lib/ai-service";
+import { generateText, LanguageModel } from "ai";
 
 export async function POST(req: Request) {
   try {
@@ -50,6 +50,9 @@ export async function POST(req: Request) {
     const lessonTopics = (subject as any).lessons.map((l: any) => l.title).join(", ");
     const topicContext = lessonTopics || `Fundamentos de ${subject.name}`;
 
+    const model = getQuizModel();
+    if (!model) throw new Error("Motor de IA de Simulado indisponível.");
+
     console.log(`🎓 Gerando Prova Final para ${subject.name} com temas: ${topicContext}`);
     
     const promptMessage = `Você é o "Mestre ENEM Avaliador". Elabore a PROVA FINAL de certificação para a disciplina de ${subject.name}.
@@ -82,10 +85,22 @@ export async function POST(req: Request) {
       aiResponseText = response.text;
     } catch (aiError: any) {
       console.error("Erro no Orquestrador IA (Prova Final):", aiError.message);
+      // Fallback de Contingência Silencioso
       aiResponseText = JSON.stringify({
+        title: `Prova Final: ${subject.name} (Estágio Mestre)`,
+        description: "Avaliação final de desempenho baseada nos conteúdos abordados nesta disciplina.",
+        questions: [
+          {
+            text: `(ENEM) Considerando os avanços estudados em ${subject.name}, a análise crítica dos processos apresentados demonstra que:`,
+            options: [
+              { text: "A fundamentação teórica é a base para o desenvolvimento das competências exigidas pelo ENEM.", isCorrect: true },
+              { text: "O conhecimento é segmentado e não depende de revisões constantes.", isCorrect: false },
+              { text: "As métricas de avaliação são meramente pro forma e sem valor pedagógico.", isCorrect: false },
+              { text: "A prática é dissociada da teoria ensinada nas aulas de vídeo.", isCorrect: false }
+            ]
           },
           {
-            text: `(ENEM) Qual a premissa base dos estudos modernos envolvendo essa disciplina específica do ENEM?`,
+            text: `(ENEM) Qual a premissa base dos estudos modernos envolvendo esta disciplina específica do ENEM?`,
             options: [
               { text: "Garante uma análise sistêmica orientada para um desenvolvimento sustentável e racional.", isCorrect: true },
               { text: "Serve apenas para desconstrução linguística e não de aplicação de fatos reais.", isCorrect: false },

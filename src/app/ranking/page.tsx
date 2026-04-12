@@ -48,7 +48,6 @@ export default async function RankingPage() {
 
     activeCycle = await prisma.rankingCycle.create({
       data: {
-        name: `Temporada ${new Date().toLocaleDateString('pt-BR')}`,
         startDate: new Date(),
         endDate: newEndDate,
         active: true

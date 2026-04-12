@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { getChatModel } from "@/lib/ai-service";
+import { askAI, getChatModel } from "@/lib/ai-service";
 import { generateText } from "ai";
 
 export async function POST(req: Request) {
@@ -97,7 +97,7 @@ Retorne EXCLUSIVAMENTE o JSON abaixo, sem markdown, sem texto adicional:
       rawJson = rawJson.replace(/```json/g, "").replace(/```/g, "").trim();
       generatedData = JSON.parse(rawJson);
     } catch (err) {
-      console.error("Erro ao parsear JSON da IA:", aiResponse.text);
+      console.error("Erro ao parsear JSON da IA:", aiResponseText);
       throw new Error("A IA falhou na formatação das questões. Tente novamente.");
     }
 

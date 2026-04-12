@@ -1,5 +1,5 @@
-import { getQuizModel } from "./ai-service";
-import { generateText } from "ai";
+import { askAI, getChatModel, getQuizModel } from "@/lib/ai-service";
+import { generateText, type LanguageModel } from "ai";
 
 /**
  * Mestre ENEM - Geração de Desafios Elite (Sênior)
@@ -81,10 +81,12 @@ FORMATO DO JSON (Exemplo):
 
   try {
     const model = getQuizModel();
+    if (!model) throw new Error("Motor de IA de Simulado indisponível.");
+    
     console.log(`[GROQ-QUIZ] 🤖 Gerando simulado de ${subjectName} no nível ${difficulty}...`);
 
     const { text } = await generateText({
-      model,
+      model: model as LanguageModel,
       system: systemPrompt,
       prompt: `Gere questões de ${subjectName} focadas no ENEM.${contextPart}`,
       temperature: 0.4, // Mais rígido para evitar mistura de matérias

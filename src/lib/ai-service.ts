@@ -1,12 +1,21 @@
 import { createGroq } from "@ai-sdk/groq";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateText } from "ai";
+import { generateText, type LanguageModel } from "ai";
 
 /**
- * Mestre ENEM - Serviço de IA DEFINITIVO (Padrão Sênior)
- * Arquitetura de Alta Disponibilidade: Groq (Primário) -> Grok (Auditor/Fallback)
+ * Mestre ENEM - Serviço de IA DEFINITIVO (Padrão Sênio)
+ * Arquitetura de Alta Disponibilidade: Grok-2 (Elite) -> Groq (Speed) -> Gemini (Stability)
  */
+
+export const REDACAO_AUDITOR_SYSTEM_PROMPT = `Você é a Banca Examinadora Suprema do ENEM. 
+Analise redações com critério rígido nas 5 competências:
+1. Domínio da norma culta.
+2. Compreender a proposta e aplicar conceitos de várias áreas.
+3. Selecionar, relacionar, organizar e interpretar informações.
+4. Conhecimento dos mecanismos linguísticos.
+5. Proposta de intervenção.
+Seja pedagógico, sênior e direto no feedback.`;
 
 const getGroqInstance = () => {
   const apiKey = process.env.GROQ_API_KEY;
@@ -38,19 +47,19 @@ const getGeminiInstance = () => {
  * Mestre ENEM - Orquestrador Universal (High-Availability)
  * Prioridade: Grok-2 (Elite) -> Groq (Speed) -> Gemini (Stability)
  */
-export const getChatModel = (provider: "grok" | "groq" | "gemini" = "grok") => {
+export const getChatModel = (provider: "grok" | "groq" | "gemini" = "grok"): any | null => {
   try {
     if (provider === "grok") {
       const grok = getGrokInstance();
-      return grok ? grok("grok-2-latest") : null;
+      return grok ? grok("grok-2-latest") as any : null;
     }
     if (provider === "groq") {
       const groq = getGroqInstance();
-      return groq ? groq("llama-3.3-70b-versatile") : null;
+      return groq ? groq("llama-3.3-70b-versatile") as any : null;
     }
     if (provider === "gemini") {
       const gemini = getGeminiInstance();
-      return gemini ? gemini("gemini-1.5-flash") : null;
+      return gemini ? gemini("gemini-1.5-flash") as any : null;
     }
   } catch (e) {
     return null;
@@ -58,17 +67,22 @@ export const getChatModel = (provider: "grok" | "groq" | "gemini" = "grok") => {
   return null;
 };
 
-export const getQuizModel = (provider: "grok" | "groq" = "grok") => {
+export const getQuizModel = (provider: "grok" | "groq" = "grok"): any | null => {
   try {
     if (provider === "grok") {
       const grok = getGrokInstance();
-      return grok ? grok("grok-2-latest") : null;
+      return grok ? grok("grok-2-latest") as any : null;
     }
     const groq = getGroqInstance();
-    return groq ? groq("llama-3.1-8b-instant") : null;
-  } catch (e) {
+    return groq ? groq("llama-3.1-8b-instant") as any : null;
+  } catch (err) {
     return null;
   }
+};
+
+export const getVisionModel = (): any | null => {
+  const gemini = getGeminiInstance();
+  return gemini ? gemini("gemini-1.5-flash") as any : null;
 };
 
 export async function askAI(
@@ -192,6 +206,8 @@ export async function askVisionAI(
       const fallbackSystem = `${system}\n\n[INSTRUÇÃO DE CONTINGÊNCIA]: Você acaba de receber uma solicitação com uma IMAGEM anexada, porém seu "Sensor Neural de Visão" está em manutenção técnica temporária.
 O usuário digitou o seguinte ao enviar a foto: "${prompt || 'olha essa imagem'}".
 Responda diretamente a isso com excelente humor. Diga claramente que seu "Sensor Ocular" está passando por um mega upgrade e não pôde ver a imagem, mas responda ao que ele escreveu da melhor maneira possível. Se ele falou de "rosto do desenvolvedor", reconheça seu criador com honras, mas brinque que no escuro não dá pra ver a beleza dele! Mantenha a imersão do Mestre ENEM.`;
+
+      if (!fallbackModel) throw new Error("Motor de fallback indisponível.");
 
       return await generateText({
         model: fallbackModel,
